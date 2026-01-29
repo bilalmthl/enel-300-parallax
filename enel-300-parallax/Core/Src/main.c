@@ -103,7 +103,7 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
-// BIG CHANGE HELLOOOOO!
+// BIG CHANGE!
 /**
   * @brief System Clock Configuration
   * @retval None

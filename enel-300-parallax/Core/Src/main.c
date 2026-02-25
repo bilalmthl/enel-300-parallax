@@ -118,14 +118,14 @@ int main(void)
 
 
 	      // Motor 1 Forward
-	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 500); // PA0 (IN1) pulsing
-	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);   // PB0 (IN2) off
+	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0); // PA0 (IN1) pulsing
+	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 400);   // PB0 (IN2) off
 
 	      // Motor 2 Forward
-	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 500); // PA1 (IN3) pulsing
+	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 400); // PA1 (IN3) pulsing
 	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);   // PB7 (IN4) off
 
-	      HAL_Delay(2000);
+	      HAL_Delay(1000);
 
 
 	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
@@ -138,14 +138,14 @@ int main(void)
 
 
 	      // Motor 1 Reverse
-	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);   // PA0 (IN1) off
-	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 500); // PB0 (IN2) pulsing
+	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 400);   // PA0 (IN1) off
+	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0); // PB0 (IN2) pulsing
 
 	      // Motor 2 Reverse
 	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);   // PA1 (IN3) off
-	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 500); // PB7 (IN4) pulsing
+	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 400); // PB7 (IN4) pulsing
 
-	      HAL_Delay(2000);
+	      HAL_Delay(750);
 
 
 	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);

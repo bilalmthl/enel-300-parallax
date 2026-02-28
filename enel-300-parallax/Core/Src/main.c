@@ -40,9 +40,15 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+<<<<<<< HEAD
 I2C_HandleTypeDef hi2c1;
 
 TIM_HandleTypeDef htim1;
+=======
+TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim4;
+>>>>>>> branch 'main' of https://github.com/bilalmthl/enel-300-parallax.git
 
 UART_HandleTypeDef huart2;
 
@@ -58,8 +64,14 @@ volatile float Distance = 0.0f;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+<<<<<<< HEAD
 static void MX_I2C1_Init(void);
 static void MX_TIM1_Init(void);
+=======
+static void MX_TIM2_Init(void);
+static void MX_TIM3_Init(void);
+static void MX_TIM4_Init(void);
+>>>>>>> branch 'main' of https://github.com/bilalmthl/enel-300-parallax.git
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -99,11 +111,26 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+<<<<<<< HEAD
   MX_I2C1_Init();
   MX_TIM1_Init();
+=======
+  MX_TIM2_Init();
+  MX_TIM3_Init();
+  MX_TIM4_Init();
+>>>>>>> branch 'main' of https://github.com/bilalmthl/enel-300-parallax.git
   /* USER CODE BEGIN 2 */
+<<<<<<< HEAD
   HAL_TIM_Base_Start(&htim1);
   HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
+=======
+
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // Starts PA0
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2); // Starts PA1
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3); // Starts PB0
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2); // Starts PB7
+
+>>>>>>> branch 'main' of https://github.com/bilalmthl/enel-300-parallax.git
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -113,6 +140,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+<<<<<<< HEAD
 	  HCSR04_Trigger();
 
 	  char buffer[20];
@@ -124,6 +152,48 @@ int main(void)
 	  lcd_send_string(buffer);
 
 	  HAL_Delay(200);
+=======
+
+
+	      // Motor 1 Forward
+	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0); // PA0 (IN1) pulsing
+	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 400);   // PB0 (IN2) off
+
+	      // Motor 2 Forward
+	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 400); // PA1 (IN3) pulsing
+	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);   // PB7 (IN4) off
+
+	      HAL_Delay(1000);
+
+
+	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
+	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
+	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);
+
+	      HAL_Delay(1000);
+
+
+
+	      // Motor 1 Reverse
+	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 400);   // PA0 (IN1) off
+	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0); // PB0 (IN2) pulsing
+
+	      // Motor 2 Reverse
+	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);   // PA1 (IN3) off
+	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 400); // PB7 (IN4) pulsing
+
+	      HAL_Delay(750);
+
+
+	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
+	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
+	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);
+
+	      HAL_Delay(1000);
+
+>>>>>>> branch 'main' of https://github.com/bilalmthl/enel-300-parallax.git
   }
   /* USER CODE END 3 */
 }
@@ -176,6 +246,7 @@ void SystemClock_Config(void)
 }
 
 /**
+<<<<<<< HEAD
   * @brief I2C1 Initialization Function
   * @param None
   * @retval None
@@ -255,6 +326,185 @@ static void MX_TIM1_Init(void)
   /* USER CODE BEGIN TIM1_Init 2 */
 
   /* USER CODE END TIM1_Init 2 */
+=======
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 83;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 999;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+  HAL_TIM_MspPostInit(&htim2);
+
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 83;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 999;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 83;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 999;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
+  HAL_TIM_MspPostInit(&htim4);
+>>>>>>> branch 'main' of https://github.com/bilalmthl/enel-300-parallax.git
 
 }
 

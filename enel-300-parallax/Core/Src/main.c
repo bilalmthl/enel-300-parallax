@@ -40,15 +40,14 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-<<<<<<< HEAD
+
 I2C_HandleTypeDef hi2c1;
 
 TIM_HandleTypeDef htim1;
-=======
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
->>>>>>> branch 'main' of https://github.com/bilalmthl/enel-300-parallax.git
+
 
 UART_HandleTypeDef huart2;
 
@@ -64,14 +63,12 @@ volatile float Distance = 0.0f;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
-<<<<<<< HEAD
+
 static void MX_I2C1_Init(void);
 static void MX_TIM1_Init(void);
-=======
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
->>>>>>> branch 'main' of https://github.com/bilalmthl/enel-300-parallax.git
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -111,26 +108,21 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
-<<<<<<< HEAD
   MX_I2C1_Init();
   MX_TIM1_Init();
-=======
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
->>>>>>> branch 'main' of https://github.com/bilalmthl/enel-300-parallax.git
+
   /* USER CODE BEGIN 2 */
-<<<<<<< HEAD
+
   HAL_TIM_Base_Start(&htim1);
   HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
-=======
-
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // Starts PA0
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2); // Starts PA1
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3); // Starts PB0
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2); // Starts PB7
 
->>>>>>> branch 'main' of https://github.com/bilalmthl/enel-300-parallax.git
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -140,7 +132,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-<<<<<<< HEAD
 	  HCSR04_Trigger();
 
 	  char buffer[20];
@@ -152,8 +143,6 @@ int main(void)
 	  lcd_send_string(buffer);
 
 	  HAL_Delay(200);
-=======
-
 
 	      // Motor 1 Forward
 	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0); // PA0 (IN1) pulsing
@@ -193,7 +182,6 @@ int main(void)
 
 	      HAL_Delay(1000);
 
->>>>>>> branch 'main' of https://github.com/bilalmthl/enel-300-parallax.git
   }
   /* USER CODE END 3 */
 }
@@ -246,7 +234,6 @@ void SystemClock_Config(void)
 }
 
 /**
-<<<<<<< HEAD
   * @brief I2C1 Initialization Function
   * @param None
   * @retval None
@@ -326,7 +313,6 @@ static void MX_TIM1_Init(void)
   /* USER CODE BEGIN TIM1_Init 2 */
 
   /* USER CODE END TIM1_Init 2 */
-=======
   * @brief TIM2 Initialization Function
   * @param None
   * @retval None
@@ -504,8 +490,6 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 2 */
   HAL_TIM_MspPostInit(&htim4);
->>>>>>> branch 'main' of https://github.com/bilalmthl/enel-300-parallax.git
-
 }
 
 /**

@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <string.h>
 #include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
@@ -116,21 +117,26 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_TIM_Base_Start(&htim1);
-  HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
-  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
+  // 1. Declare Variables FIRST to keep the compiler happy
+  /* USER CODE BEGIN 2 */
 
-  // Latch Variables for Bluetooth
-  uint8_t transmit_latch = 0;       // 0 = Paused, 1 = Transmitting
-  uint8_t last_button_state = 1;    // The Blue button is normally HIGH
+    // 1. Declare Variables FIRST to keep the compiler happy
+    uint8_t transmit_latch = 0;       // 0 = Paused, 1 = Transmitting
+    uint8_t last_button_state = 1;    // The Blue button is normally HIGH
+
+    // 2. Start all Hardware Timers
+    HAL_TIM_Base_Start(&htim1);
+    HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+    HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint8_t ch;
   while (1)
   {
     /* USER CODE END WHILE */

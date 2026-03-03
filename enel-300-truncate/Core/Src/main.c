@@ -18,6 +18,9 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "i2c-lcd.h"
+#include <stdio.h>
+#include <string.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -48,7 +51,7 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+char rx_buffer[50];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -101,28 +104,48 @@ int main(void)
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  lcd_init();         // Initialize the LCD
+  lcd_put_cur(0, 0);
+  lcd_send_string("Ready to receive");
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  uint8_t bRead;
-  uint16_t delay_ms = 200;
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	bRead = HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);
-	if (bRead == 0) {
-		delay_ms += 400;
-		if (delay_ms >= 1200){
-			delay_ms = 200;
-		}
-	}
-	HAL_GPIO_DeInit(LD2_GPIO_Port, LD2_Pin);
-	HAL_Delay(delay_ms);
+	  memset(rx_buffer, 0, sizeof(rx_buffer));
+	      uint8_t index = 0;
+	      uint8_t byte;
+
+	      // Read one byte at a time until we hit the newline '\n' or the buffer is full
+	      while (HAL_UART_Receive(&huart1, &byte, 1, 50) == HAL_OK)
+	      {
+	          rx_buffer[index++] = byte;
+	          if (byte == '\n' || index >= (sizeof(rx_buffer) - 1))
+	          {
+	              break; // Stop listening once the message is complete
+	          }
+	      }
+
+	      // If we actually received data, update the display
+	      if (index > 0)
+	      {
+	          // Print to PC Console
+	          printf("Received: %s", rx_buffer);
+
+	          // Update LCD
+	          lcd_clear();
+	          lcd_put_cur(0, 0);
+	          lcd_send_string("BT Telemetry:");
+	          lcd_put_cur(1, 0);
+	          lcd_send_string(rx_buffer);
+	      }
+
+	      HAL_Delay(50); // Small stability delay
 
 
   }
@@ -368,6 +391,11 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+int _write(int file, char *ptr, int len)
+{
+    HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, HAL_MAX_DELAY);
+    return len;
+}
 
 /* USER CODE END 4 */
 

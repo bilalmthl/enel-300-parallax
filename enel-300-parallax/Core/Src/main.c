@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -47,6 +48,7 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 
+UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -66,8 +68,9 @@ static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
+void HCSR04_Trigger(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -110,6 +113,7 @@ int main(void)
   MX_TIM4_Init();
   MX_I2C1_Init();
   MX_TIM1_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   HAL_TIM_Base_Start(&htim1);
@@ -130,53 +134,53 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  HCSR04_Trigger();
 
-	  char buffer[20];
-	  sprintf(buffer, "Dist: %.2f cm", Distance);
+	  printf("Dist: %.2f cm\r\n", Distance);
+	  fflush(stdout);  // <--- Forces the text out to the console immediately
 
-	  lcd_put_cur(0,0);
-	  lcd_send_string("                ");  // clear line
-	  lcd_put_cur(0,0);
-	  lcd_send_string(buffer);
-
-	  HAL_Delay(200);
-
-	      // Motor 1 Forward
-	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0); // PA0 (IN1) pulsing
-	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 400);   // PB0 (IN2) off
-
-	      // Motor 2 Forward
-	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 400); // PA1 (IN3) pulsing
-	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);   // PB7 (IN4) off
-
-	      HAL_Delay(1000);
+	  HAL_Delay(1000);
+//	  lcd_put_cur(0,0);
+//	  lcd_send_string("                ");  // clear line
+//	  lcd_put_cur(0,0);
+//	  lcd_send_string(buffer);
 
 
-	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
-	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
-	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
-	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);
-
-	      HAL_Delay(1000);
-
-
-
-	      // Motor 1 Reverse
-	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 400);   // PA0 (IN1) off
-	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0); // PB0 (IN2) pulsing
-
-	      // Motor 2 Reverse
-	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);   // PA1 (IN3) off
-	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 400); // PB7 (IN4) pulsing
-
-	      HAL_Delay(750);
-
-
-	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
-	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
-	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
-	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);
-
-	      HAL_Delay(1000);
+//	      // Motor 1 Forward
+//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0); // PA0 (IN1) pulsing
+//	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 400);   // PB0 (IN2) off
+//
+//	      // Motor 2 Forward
+//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 400); // PA1 (IN3) pulsing
+//	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);   // PB7 (IN4) off
+//
+//	      HAL_Delay(1000);
+//
+//
+//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
+//	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
+//	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);
+//
+//	      HAL_Delay(1000);
+//
+//
+//
+//	      // Motor 1 Reverse
+//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 400);   // PA0 (IN1) off
+//	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0); // PB0 (IN2) pulsing
+//
+//	      // Motor 2 Reverse
+//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);   // PA1 (IN3) off
+//	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 400); // PB7 (IN4) pulsing
+//
+//	      HAL_Delay(750);
+//
+//
+//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
+//	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
+//	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);
+//
+//	      HAL_Delay(1000);
 
   }
   /* USER CODE END 3 */
@@ -494,6 +498,39 @@ static void MX_TIM4_Init(void)
 }
 
 /**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 9600;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -509,7 +546,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -545,7 +582,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LD2_Pin|GPIO_PIN_9, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -553,12 +593,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LD2_Pin PA9 */
-  GPIO_InitStruct.Pin = LD2_Pin|GPIO_PIN_9;
+  /*Configure GPIO pin : LD2_Pin */
+  GPIO_InitStruct.Pin = LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -566,11 +613,21 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+int _write(int file, char *ptr, int len)
+{
+    HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, HAL_MAX_DELAY);
+    return len;
+}
+
 void HCSR04_Trigger(void)
 {
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
-    delay(10);   // 10 microseconds
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);   // Trigger pin is now PC7
+
+    // Create a 10 microsecond delay using TIM1
+    uint32_t start_time = __HAL_TIM_GET_COUNTER(&htim1);
+    while((__HAL_TIM_GET_COUNTER(&htim1) - start_time) < 10);
+
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
 }
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)

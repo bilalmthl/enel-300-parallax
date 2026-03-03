@@ -118,10 +118,14 @@ int main(void)
 
   HAL_TIM_Base_Start(&htim1);
   HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // Starts PA0
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2); // Starts PA1
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3); // Starts PB0
-  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2); // Starts PB7
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
+
+  // Latch Variables for Bluetooth
+  uint8_t transmit_latch = 0;       // 0 = Paused, 1 = Transmitting
+  uint8_t last_button_state = 1;    // The Blue button is normally HIGH
 
   /* USER CODE END 2 */
 
@@ -132,16 +136,44 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  HCSR04_Trigger();
+//	  HCSR04_Trigger();
+//
+//	  printf("Dist: %.2f cm\r\n", Distance);
+//	  fflush(stdout);  // <--- Forces the text out to the console immediately
+//
+//	  HAL_Delay(1000);
 
-	  printf("Dist: %.2f cm\r\n", Distance);
-	  fflush(stdout);  // <--- Forces the text out to the console immediately
+	  	  	// 1. Fire the sensor and calculate distance
+	        HCSR04_Trigger();
+	        HAL_Delay(50); // Give the echo time to return
 
-	  HAL_Delay(1000);
-//	  lcd_put_cur(0,0);
-//	  lcd_send_string("                ");  // clear line
-//	  lcd_put_cur(0,0);
-//	  lcd_send_string(buffer);
+	        // 2. Read the Blue Button (PC13)
+	        uint8_t current_button_state = HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);
+
+	        // 3. Detect a button press (falling edge) to toggle the latch
+	        if (current_button_state == GPIO_PIN_RESET && last_button_state == GPIO_PIN_SET)
+	        {
+	            transmit_latch = !transmit_latch; // Flip between 0 and 1
+	            HAL_Delay(200);                   // Debounce the button press
+	        }
+	        last_button_state = current_button_state;
+
+	        // 4. Print to Serial Monitor so you can debug locally via USB
+	        printf("Dist: %.2f cm | Latch: %d\r\n", Distance, transmit_latch);
+	        fflush(stdout);
+
+	        // 5. If latched ON, beam the data via Bluetooth (USART1)
+	        if (transmit_latch == 1)
+	        {
+	            char bt_buffer[30];
+	            // Format the string. Adding \n helps the receiver know when the message ends.
+	            int len = sprintf(bt_buffer, "Dist: %.2f cm\n", Distance);
+
+	            // Send over huart1 (PA9/PA10 to the HC-05)
+	            HAL_UART_Transmit(&huart1, (uint8_t*)bt_buffer, len, HAL_MAX_DELAY);
+	        }
+
+	        HAL_Delay(150); // Main loop delay
 
 
 //	      // Motor 1 Forward

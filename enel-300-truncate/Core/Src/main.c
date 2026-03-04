@@ -104,9 +104,36 @@ int main(void)
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  lcd_init();         // Initialize the LCD
-  lcd_put_cur(0, 0);
-  lcd_send_string("Ready to receive");
+//  lcd_init();         // Initialize the LCD
+//  lcd_put_cur(0, 0);
+//  lcd_send_string("Ready to receive");
+
+  // 1. Tell the PC we are starting the scan
+    char scan_msg[] = "\r\n--- Starting I2C Scan ---\r\n";
+    HAL_UART_Transmit(&huart2, (uint8_t*)scan_msg, strlen(scan_msg), 100);
+
+    // 2. Loop through all possible 7-bit I2C addresses
+    for (uint8_t i = 1; i < 128; i++)
+    {
+        // The HAL library requires the address to be shifted left by 1 bit
+        uint16_t shifted_addr = (uint16_t)(i << 1);
+
+        // Ping the address. If it returns HAL_OK, the device responded!
+        if (HAL_I2C_IsDeviceReady(&hi2c1, shifted_addr, 3, 5) == HAL_OK)
+        {
+            printf("-> LCD FOUND! \r\n");
+            printf("-> Standard 7-bit Address: 0x%02X \r\n", i);
+            printf("-> STM32 HAL Address: 0x%02X \r\n", shifted_addr);
+        }
+    }
+
+    char done_msg[] = "--- Scan Complete ---\r\n";
+    HAL_UART_Transmit(&huart2, (uint8_t*)done_msg, strlen(done_msg), 100);
+
+    // 3. Trap the code in an infinite loop right here so it doesn't run the rest of main()
+    while(1) {
+        HAL_Delay(100);
+    }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -117,35 +144,57 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  memset(rx_buffer, 0, sizeof(rx_buffer));
-	      uint8_t index = 0;
-	      uint8_t byte;
+	  // --- ISOLATED LCD TEST ---
+	        // This completely ignores the Bluetooth and forces the screen to update.
 
-	      // Read one byte at a time until we hit the newline '\n' or the buffer is full
-	      while (HAL_UART_Receive(&huart1, &byte, 1, 50) == HAL_OK)
-	      {
-	          rx_buffer[index++] = byte;
-	          if (byte == '\n' || index >= (sizeof(rx_buffer) - 1))
-	          {
-	              break; // Stop listening once the message is complete
-	          }
-	      }
+	        lcd_put_cur(0, 0);
+	        lcd_send_string("LCD TEST MODE   ");
 
-	      // If we actually received data, update the display
-	      if (index > 0)
-	      {
-	          // Print to PC Console
-	          printf("Received: %s", rx_buffer);
+	        lcd_put_cur(1, 0);
+	        lcd_send_string("Status: ONLINE  ");
+	        HAL_Delay(1000);
 
-	          // Update LCD
-	          lcd_clear();
-	          lcd_put_cur(0, 0);
-	          lcd_send_string("BT Telemetry:");
-	          lcd_put_cur(1, 0);
-	          lcd_send_string(rx_buffer);
-	      }
+	        lcd_put_cur(1, 0);
+	        lcd_send_string("Status: BLINK   ");
+	        HAL_Delay(1000);
 
-	      HAL_Delay(50); // Small stability delay
+
+//	  memset(rx_buffer, 0, sizeof(rx_buffer));
+//	        uint8_t index = 0;
+//	        uint8_t byte = 0;
+//
+//	        // 1. Wait up to 100ms for the FIRST byte of a message to arrive
+//	        if (HAL_UART_Receive(&huart1, &byte, 1, 100) == HAL_OK)
+//	        {
+//	            rx_buffer[index++] = byte;
+//
+//	            // 2. Once the message starts, read the rest of the bytes rapidly
+//	            while (HAL_UART_Receive(&huart1, &byte, 1, 10) == HAL_OK)
+//	            {
+//	                rx_buffer[index++] = byte;
+//	                if (byte == '\n' || index >= (sizeof(rx_buffer) - 1))
+//	                {
+//	                    break; // Stop listening once the newline is found
+//	                }
+//	            }
+//
+//	            // 3. Ensure we actually got a valid string before writing to the slow LCD
+//	            if (index > 3)
+//	            {
+//	                // Print to the PC Serial Monitor (USART2) so you can verify reception
+//	                printf("Received: %s", rx_buffer);
+//
+//	                // Update the LCD without using the slow lcd_clear() command
+//	                lcd_put_cur(0, 0);
+//	                lcd_send_string("BT Telemetry:   ");
+//
+//	                lcd_put_cur(1, 0);
+//	                lcd_send_string("                "); // Print 16 spaces to instantly wipe the old numbers
+//
+//	                lcd_put_cur(1, 0);
+//	                lcd_send_string(rx_buffer);        // Print the new distance
+//	            }
+//	        }
 
 
   }
@@ -334,7 +383,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;

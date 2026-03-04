@@ -18,8 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -53,6 +53,7 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+char rx_buffer[50];
 uint32_t IC_Val1 = 0;
 uint32_t IC_Val2 = 0;
 uint8_t  Is_First_Captured = 0;
@@ -124,6 +125,7 @@ int main(void)
     uint8_t transmit_latch = 0;       // 0 = Paused, 1 = Transmitting
     uint8_t last_button_state = 1;    // The Blue button is normally HIGH
 
+
     // 2. Start all Hardware Timers
     HAL_TIM_Base_Start(&htim1);
     HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
@@ -132,22 +134,23 @@ int main(void)
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
 
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint8_t ch;
+   uint8_t ch;
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-//	  HCSR04_Trigger();
-//
-//	  printf("Dist: %.2f cm\r\n", Distance);
-//	  fflush(stdout);  // <--- Forces the text out to the console immediately
-//
-//	  HAL_Delay(1000);
+	  HCSR04_Trigger();
+
+	  printf("Dist: %.2f cm\r\n", Distance);
+	  fflush(stdout);  // <--- Forces the text out to the console immediately
+
+	  HAL_Delay(1000);
 
 	  	  	// 1. Fire the sensor and calculate distance
 	        HCSR04_Trigger();
@@ -179,7 +182,24 @@ int main(void)
 	            HAL_UART_Transmit(&huart1, (uint8_t*)bt_buffer, len, HAL_MAX_DELAY);
 	        }
 
-	        HAL_Delay(150); // Main loop delay
+	        HAL_Delay(500); // Main loop delay
+
+//	  // PC (USART2) -> HC-05 (USART1)
+//	  if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_RXNE)) {
+//	      uint8_t ch = (uint8_t)(huart2.Instance->DR & 0xFF);
+//	      while (!__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TXE));
+//	      huart1.Instance->DR = ch;
+//	      while (!__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TC));
+//	  }
+//
+//	  // HC-05 (USART1) -> PC (USART2)
+//	  if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE)) {
+//	      uint8_t ch = (uint8_t)(huart1.Instance->DR & 0xFF);
+//	      while (!__HAL_UART_GET_FLAG(&huart2, UART_FLAG_TXE));
+//	      huart2.Instance->DR = ch;
+//	      while (!__HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC));
+//	  }
+
 
 
 //	      // Motor 1 Forward
@@ -584,7 +604,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 9600;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;

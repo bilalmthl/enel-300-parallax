@@ -18,7 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "i2c-lcd.h"
+#include "liquidcrystal_i2c.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -51,6 +51,7 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+
 char rx_buffer[50];
 /* USER CODE END PV */
 
@@ -104,36 +105,19 @@ int main(void)
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-//  lcd_init();         // Initialize the LCD
-//  lcd_put_cur(0, 0);
-//  lcd_send_string("Ready to receive");
+  // 1. Initialize the display for 2 rows
+    HD44780_Init(2);
 
-  // 1. Tell the PC we are starting the scan
-    char scan_msg[] = "\r\n--- Starting I2C Scan ---\r\n";
-    HAL_UART_Transmit(&huart2, (uint8_t*)scan_msg, strlen(scan_msg), 100);
+    // 2. Clear out any factory garbage
+    HD44780_Clear();
 
-    // 2. Loop through all possible 7-bit I2C addresses
-    for (uint8_t i = 1; i < 128; i++)
-    {
-        // The HAL library requires the address to be shifted left by 1 bit
-        uint16_t shifted_addr = (uint16_t)(i << 1);
+    // 3. Print to the top row (Column 0, Row 0)
+    HD44780_SetCursor(0, 0);
+    HD44780_PrintStr("LCD IS ALIVE!!");
 
-        // Ping the address. If it returns HAL_OK, the device responded!
-        if (HAL_I2C_IsDeviceReady(&hi2c1, shifted_addr, 3, 5) == HAL_OK)
-        {
-            printf("-> LCD FOUND! \r\n");
-            printf("-> Standard 7-bit Address: 0x%02X \r\n", i);
-            printf("-> STM32 HAL Address: 0x%02X \r\n", shifted_addr);
-        }
-    }
-
-    char done_msg[] = "--- Scan Complete ---\r\n";
-    HAL_UART_Transmit(&huart2, (uint8_t*)done_msg, strlen(done_msg), 100);
-
-    // 3. Trap the code in an infinite loop right here so it doesn't run the rest of main()
-    while(1) {
-        HAL_Delay(100);
-    }
+    // 4. Print to the bottom row (Column 0, Row 1)
+    HD44780_SetCursor(0, 1);
+    HD44780_PrintStr("Timing is fixed!");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -147,15 +131,15 @@ int main(void)
 	  // --- ISOLATED LCD TEST ---
 	        // This completely ignores the Bluetooth and forces the screen to update.
 
-	        lcd_put_cur(0, 0);
-	        lcd_send_string("LCD TEST MODE   ");
+	        HD44780_SetCursor(0, 0);
+	        HD44780_PrintStr("LCD TEST MODE   ");
 
-	        lcd_put_cur(1, 0);
-	        lcd_send_string("Status: ONLINE  ");
+	        HD44780_SetCursor(0, 1);
+	        HD44780_PrintStr("Status: ONLINE  ");
 	        HAL_Delay(1000);
 
-	        lcd_put_cur(1, 0);
-	        lcd_send_string("Status: BLINK   ");
+	        HD44780_SetCursor(0, 1);
+	        HD44780_PrintStr("Status: BLINK   ");
 	        HAL_Delay(1000);
 
 
@@ -185,14 +169,14 @@ int main(void)
 //	                printf("Received: %s", rx_buffer);
 //
 //	                // Update the LCD without using the slow lcd_clear() command
-//	                lcd_put_cur(0, 0);
-//	                lcd_send_string("BT Telemetry:   ");
+//	                HD44780_SetCursor(0, 0);
+//	                HD44780_PrintStr("BT Telemetry:   ");
 //
-//	                lcd_put_cur(1, 0);
-//	                lcd_send_string("                "); // Print 16 spaces to instantly wipe the old numbers
+//	                HD44780_SetCursor(0, 1);
+//	                HD44780_PrintStr("                "); // Print 16 spaces to instantly wipe the old numbers
 //
-//	                lcd_put_cur(1, 0);
-//	                lcd_send_string(rx_buffer);        // Print the new distance
+//	                HD44780_SetCursor(0, 1);
+//	                HD44780_PrintStr(rx_buffer);        // Print the new distance
 //	            }
 //	        }
 
@@ -201,31 +185,22 @@ int main(void)
   /* USER CODE END 3 */
 }
 
-/**
-  * @brief System Clock Configuration
-  * @retval None
-  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage
-  */
   __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 16;
-  RCC_OscInitStruct.PLL.PLLN = 336;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
+  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLN = 180;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 2;
   RCC_OscInitStruct.PLL.PLLR = 2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -233,26 +208,24 @@ void SystemClock_Config(void)
     Error_Handler();
   }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
+  if (HAL_PWREx_EnableOverDrive() != HAL_OK)
+  {
+    Error_Handler();
+  }
+
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }
 }
 
-/**
-  * @brief ADC1 Initialization Function
-  * @param None
-  * @retval None
-  */
 static void MX_ADC1_Init(void)
 {
 
@@ -300,11 +273,6 @@ static void MX_ADC1_Init(void)
 
 }
 
-/**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
 static void MX_I2C1_Init(void)
 {
 
@@ -334,11 +302,6 @@ static void MX_I2C1_Init(void)
 
 }
 
-/**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
 static void MX_USART1_UART_Init(void)
 {
 
@@ -367,11 +330,6 @@ static void MX_USART1_UART_Init(void)
 
 }
 
-/**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
 static void MX_USART2_UART_Init(void)
 {
 
@@ -400,11 +358,6 @@ static void MX_USART2_UART_Init(void)
 
 }
 
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -465,7 +418,7 @@ void Error_Handler(void)
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
+  * where the assert_param error has occurred.
   * @param  file: pointer to the source file name
   * @param  line: assert_param error line source number
   * @retval None

@@ -219,15 +219,15 @@ Discarded input sections
  .text.lcd_put_cur
                 0x00000000       0x3e ./Core/Src/i2c-lcd.o
  .text.lcd_init
-                0x00000000       0x7a ./Core/Src/i2c-lcd.o
+                0x00000000       0xc8 ./Core/Src/i2c-lcd.o
  .text.lcd_send_string
                 0x00000000       0x2a ./Core/Src/i2c-lcd.o
- .debug_info    0x00000000      0x76b ./Core/Src/i2c-lcd.o
- .debug_abbrev  0x00000000      0x1d3 ./Core/Src/i2c-lcd.o
+ .debug_info    0x00000000      0x790 ./Core/Src/i2c-lcd.o
+ .debug_abbrev  0x00000000      0x1d1 ./Core/Src/i2c-lcd.o
  .debug_aranges
                 0x00000000       0x48 ./Core/Src/i2c-lcd.o
  .debug_rnglists
-                0x00000000       0x31 ./Core/Src/i2c-lcd.o
+                0x00000000       0x32 ./Core/Src/i2c-lcd.o
  .debug_macro   0x00000000      0x20b ./Core/Src/i2c-lcd.o
  .debug_macro   0x00000000      0xad8 ./Core/Src/i2c-lcd.o
  .debug_macro   0x00000000      0x2a1 ./Core/Src/i2c-lcd.o
@@ -273,10 +273,10 @@ Discarded input sections
  .debug_macro   0x00000000       0x89 ./Core/Src/i2c-lcd.o
  .debug_macro   0x00000000      0x2aa ./Core/Src/i2c-lcd.o
  .debug_macro   0x00000000      0x126 ./Core/Src/i2c-lcd.o
- .debug_line    0x00000000      0x846 ./Core/Src/i2c-lcd.o
- .debug_str     0x00000000    0xd0ada ./Core/Src/i2c-lcd.o
+ .debug_line    0x00000000      0x85d ./Core/Src/i2c-lcd.o
+ .debug_str     0x00000000    0xd0ad5 ./Core/Src/i2c-lcd.o
  .comment       0x00000000       0x44 ./Core/Src/i2c-lcd.o
- .debug_frame   0x00000000       0xd8 ./Core/Src/i2c-lcd.o
+ .debug_frame   0x00000000       0xe4 ./Core/Src/i2c-lcd.o
  .ARM.attributes
                 0x00000000       0x34 ./Core/Src/i2c-lcd.o
  .group         0x00000000        0xc ./Core/Src/main.o

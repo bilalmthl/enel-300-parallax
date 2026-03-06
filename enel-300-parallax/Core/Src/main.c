@@ -18,8 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include <stdio.h>
-#include <string.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -53,7 +51,6 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-char rx_buffer[50];
 uint32_t IC_Val1 = 0;
 uint32_t IC_Val2 = 0;
 uint8_t  Is_First_Captured = 0;
@@ -122,10 +119,9 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
     // 1. Declare Variables FIRST to keep the compiler happy
-    uint8_t transmit_latch = 0;       // 0 = Paused, 1 = Transmitting
-    uint8_t last_button_state = 1;    // The Blue button is normally HIGH
-
-
+    //uint8_t transmit_latch = 0;       // 0 = Paused, 1 = Transmitting
+//    uint8_t last_button_state = 1;    // The Blue button is normally HIGH
+//
     // 2. Start all Hardware Timers
     HAL_TIM_Base_Start(&htim1);
     HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
@@ -133,73 +129,100 @@ int main(void)
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
+  HAL_Delay(2000);   // wait for HC05 to fully boot
 
+  char cmd[]="AT+UART=9600,0,0\r\n";
+  HAL_UART_Transmit(&huart1,(uint8_t*)cmd,strlen(cmd),HAL_MAX_DELAY);
+
+  printf("AT command sent\r\n");
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-   uint8_t ch;
+
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  HCSR04_Trigger();
+	  HCSR04_Trigger();     // send 10 Âµs pulse
+	      HAL_Delay(50);        // wait for echo to be captured
 
-	  printf("Dist: %.2f cm\r\n", Distance);
-	  fflush(stdout);  // <--- Forces the text out to the console immediately
+	      int dist = (int)Distance;
 
-	  HAL_Delay(1000);
+	      char msg[8];
+	      sprintf(msg,"%03d\n",dist);
 
-	  	  	// 1. Fire the sensor and calculate distance
-	        HCSR04_Trigger();
-	        HAL_Delay(50); // Give the echo time to return
+	      HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
 
-	        // 2. Read the Blue Button (PC13)
-	        uint8_t current_button_state = HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);
 
-	        // 3. Detect a button press (falling edge) to toggle the latch
-	        if (current_button_state == GPIO_PIN_RESET && last_button_state == GPIO_PIN_SET)
-	        {
-	            transmit_latch = !transmit_latch; // Flip between 0 and 1
-	            HAL_Delay(200);                   // Debounce the button press
-	        }
-	        last_button_state = current_button_state;
+	      HAL_Delay(500);
 
-	        // 4. Print to Serial Monitor so you can debug locally via USB
-	        printf("Dist: %.2f cm | Latch: %d\r\n", Distance, transmit_latch);
-	        fflush(stdout);
+	      printf("Distance: %.2f cm\r\n", Distance);
 
-	        // 5. If latched ON, beam the data via Bluetooth (USART1)
-	        if (transmit_latch == 1)
-	        {
-	            char bt_buffer[30];
-	            // Format the string. Adding \n helps the receiver know when the message ends.
-	            int len = sprintf(bt_buffer, "Dist: %.2f cm\n", Distance);
+//	  HCSR04_Trigger();
+//	      HAL_Delay(50);
+//
+//	      char msg[32];
+//	      sprintf(msg,"%.1f cm\n", Distance);
+//
+//	      HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
+//
+//	      HAL_Delay(500);   // send twice per second
+//	  HCSR04_Trigger();
+//
+//	  printf("Dist: %.2f cm\r\n", Distance);
+//	  fflush(stdout);  // <--- Forces the text out to the console immediately
+//
+//	  HAL_Delay(1000);
 
-	            // Send over huart1 (PA9/PA10 to the HC-05)
-	            HAL_UART_Transmit(&huart1, (uint8_t*)bt_buffer, len, HAL_MAX_DELAY);
-	        }
-
-	        HAL_Delay(500); // Main loop delay
-
-//	  // PC (USART2) -> HC-05 (USART1)
-//	  if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_RXNE)) {
-//	      uint8_t ch = (uint8_t)(huart2.Instance->DR & 0xFF);
-//	      while (!__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TXE));
-//	      huart1.Instance->DR = ch;
-//	      while (!__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TC));
+//	  uint8_t ch;
+//	  {
+//		    if (HAL_UART_Receive(&huart1,&ch,1,100)==HAL_OK)
+//		    {
+//		        HAL_UART_Transmit(&huart2,&ch,1,HAL_MAX_DELAY);
+//		    }
 //	  }
 //
-//	  // HC-05 (USART1) -> PC (USART2)
-//	  if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE)) {
-//	      uint8_t ch = (uint8_t)(huart1.Instance->DR & 0xFF);
-//	      while (!__HAL_UART_GET_FLAG(&huart2, UART_FLAG_TXE));
-//	      huart2.Instance->DR = ch;
-//	      while (!__HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC));
-//	  }
-
+////	  	  	// 1. Fire the sensor and calculate distance
+////	        HCSR04_Trigger();
+//	  HAL_Delay(50);
+//
+//	  char buffer[32];
+//	  sprintf(buffer,"Distance: %.2f\n",Distance);
+//
+//	  HAL_UART_Transmit(&huart1,(uint8_t*)buffer,strlen(buffer),HAL_MAX_DELAY);
+//
+//	  HAL_Delay(200);
+//
+//	        // 2. Read the Blue Button (PC13)
+//	        uint8_t current_button_state = HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);
+//
+//	        // 3. Detect a button press (falling edge) to toggle the latch
+//	        if (current_button_state == GPIO_PIN_RESET && last_button_state == GPIO_PIN_SET)
+//	        {
+//	            transmit_latch = !transmit_latch; // Flip between 0 and 1
+//	            HAL_Delay(200);                   // Debounce the button press
+//	        }
+//	        last_button_state = current_button_state;
+//
+//	        // 4. Print to Serial Monitor so you can debug locally via USB
+//	        printf("Dist: %.2f cm | Latch: %d\r\n", Distance, transmit_latch);
+//	        fflush(stdout);
+//
+//	        // 5. If latched ON, beam the data via Bluetooth (USART1)
+//	        if (transmit_latch == 1)
+//	        {
+//	            char bt_buffer[30];
+//	            // Format the string. Adding \n helps the receiver know when the message ends.
+//	            int len = sprintf(bt_buffer, "Dist: %.2f cm\n", Distance);
+//
+//	            // Send over huart1 (PA9/PA10 to the HC-05)
+//	            HAL_UART_Transmit(&huart1, (uint8_t*)bt_buffer, len, HAL_MAX_DELAY);
+//	        }
+//
+//	        HAL_Delay(150); // Main loop delay
 
 
 //	      // Motor 1 Forward
@@ -604,7 +627,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;

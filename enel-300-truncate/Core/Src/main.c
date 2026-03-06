@@ -17,8 +17,8 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <liquidcrystal_i2c.h>
 #include "main.h"
-#include "liquidcrystal_i2c.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -51,7 +51,6 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
 char rx_buffer[50];
 /* USER CODE END PV */
 
@@ -105,102 +104,134 @@ int main(void)
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  // 1. Initialize the display for 2 rows
-    HD44780_Init(2);
 
-    // 2. Clear out any factory garbage
-    HD44780_Clear();
 
-    // 3. Print to the top row (Column 0, Row 0)
-    HD44780_SetCursor(0, 0);
-    HD44780_PrintStr("LCD IS ALIVE!!");
 
-    // 4. Print to the bottom row (Column 0, Row 1)
-    HD44780_SetCursor(0, 1);
-    HD44780_PrintStr("Timing is fixed!");
+  lcd_init();
+
+  lcd_put_cur(0,0);
+  lcd_send_string("LCD TEST");
+
+  lcd_put_cur(1,0);
+  lcd_send_string("Controller OK");
+
+  HAL_Delay(15000);   // allow HC05 to boot
+
+//  char cmd1[] = "AT+ROLE=1\r\n";      // make MASTER
+//  HAL_UART_Transmit(&huart1,(uint8_t*)cmd1,strlen(cmd1),HAL_MAX_DELAY);
+//  HAL_Delay(1000);
+//
+//  char cmd2[] = "AT+CMODE=1\r\n";     // connect to any slave
+//  HAL_UART_Transmit(&huart1,(uint8_t*)cmd2,strlen(cmd2),HAL_MAX_DELAY);
+//  HAL_Delay(1000);
+//
+//  char cmd3[] = "AT+UART=9600,0,0\r\n";  // set Bluetooth speed
+//  HAL_UART_Transmit(&huart1,(uint8_t*)cmd3,strlen(cmd3),HAL_MAX_DELAY);
+//  HAL_Delay(1000);
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+//hi
+  char buffer[32];
+  uint8_t index = 0;
+  uint8_t ch;
 
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  // --- ISOLATED LCD TEST ---
-	        // This completely ignores the Bluetooth and forces the screen to update.
+//	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
 
-	        HD44780_SetCursor(0, 0);
-	        HD44780_PrintStr("LCD TEST MODE   ");
+	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
+	      {
+	          if (ch == '\n')   // end of message
+	          {
+	              buffer[index] = '\0';
 
-	        HD44780_SetCursor(0, 1);
-	        HD44780_PrintStr("Status: ONLINE  ");
-	        HAL_Delay(1000);
+	              lcd_put_cur(1,0);
+	              lcd_send_string("                "); // clear row
+	              lcd_put_cur(1,0);
+	              lcd_send_string(buffer);
 
-	        HD44780_SetCursor(0, 1);
-	        HD44780_PrintStr("Status: BLINK   ");
-	        HAL_Delay(1000);
+	              index = 0;
+	          }
+	          else
+	          {
+	              if(index < 15)
+	              {
+	                  buffer[index++] = ch;
+	              }
+	          }
+	      }
 
 
+//	  {
+//		    if (HAL_UART_Receive(&huart1,&ch,1,100)==HAL_OK)
+//		    {
+//		        HAL_UART_Transmit(&huart2,&ch,1,HAL_MAX_DELAY);
+//		    }
+//	  }
 //	  memset(rx_buffer, 0, sizeof(rx_buffer));
-//	        uint8_t index = 0;
-//	        uint8_t byte = 0;
 //
-//	        // 1. Wait up to 100ms for the FIRST byte of a message to arrive
-//	        if (HAL_UART_Receive(&huart1, &byte, 1, 100) == HAL_OK)
-//	        {
-//	            rx_buffer[index++] = byte;
 //
-//	            // 2. Once the message starts, read the rest of the bytes rapidly
-//	            while (HAL_UART_Receive(&huart1, &byte, 1, 10) == HAL_OK)
-//	            {
-//	                rx_buffer[index++] = byte;
-//	                if (byte == '\n' || index >= (sizeof(rx_buffer) - 1))
-//	                {
-//	                    break; // Stop listening once the newline is found
-//	                }
-//	            }
+//	  uint8_t index = 0;
+//	  uint8_t byte;
 //
-//	            // 3. Ensure we actually got a valid string before writing to the slow LCD
-//	            if (index > 3)
-//	            {
-//	                // Print to the PC Serial Monitor (USART2) so you can verify reception
-//	                printf("Received: %s", rx_buffer);
+//	  while(HAL_UART_Receive(&huart1,&byte,1,50)==HAL_OK)
+//	  {
+//	      rx_buffer[index++] = byte;
 //
-//	                // Update the LCD without using the slow lcd_clear() command
-//	                HD44780_SetCursor(0, 0);
-//	                HD44780_PrintStr("BT Telemetry:   ");
+//	      if(byte == '\n' || index >= sizeof(rx_buffer)-1)
+//	          break;
+//	  }
 //
-//	                HD44780_SetCursor(0, 1);
-//	                HD44780_PrintStr("                "); // Print 16 spaces to instantly wipe the old numbers
+//	  if(index > 0)
+//	  {
+//	      lcd_clear();
+//	      lcd_put_cur(0,0);
+//	      lcd_send_string("Distance:");
 //
-//	                HD44780_SetCursor(0, 1);
-//	                HD44780_PrintStr(rx_buffer);        // Print the new distance
-//	            }
-//	        }
-
+//	      lcd_put_cur(1,0);
+//	      lcd_send_string(rx_buffer);
+//	  }
+//
+//
+//	      HAL_Delay(50); // Small stability delay
+  }
 
   }
   /* USER CODE END 3 */
-}
 
+
+/**
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
+  /** Configure the main internal regulator output voltage
+  */
   __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
 
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 180;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLM = 16;
+  RCC_OscInitStruct.PLL.PLLN = 336;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
   RCC_OscInitStruct.PLL.PLLQ = 2;
   RCC_OscInitStruct.PLL.PLLR = 2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -208,24 +239,26 @@ void SystemClock_Config(void)
     Error_Handler();
   }
 
-  if (HAL_PWREx_EnableOverDrive() != HAL_OK)
-  {
-    Error_Handler();
-  }
-
+  /** Initializes the CPU, AHB and APB buses clocks
+  */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
 }
 
+/**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_ADC1_Init(void)
 {
 
@@ -273,6 +306,11 @@ static void MX_ADC1_Init(void)
 
 }
 
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_I2C1_Init(void)
 {
 
@@ -302,6 +340,11 @@ static void MX_I2C1_Init(void)
 
 }
 
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_USART1_UART_Init(void)
 {
 
@@ -330,6 +373,11 @@ static void MX_USART1_UART_Init(void)
 
 }
 
+/**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_USART2_UART_Init(void)
 {
 
@@ -341,7 +389,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 9600;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -358,6 +406,11 @@ static void MX_USART2_UART_Init(void)
 
 }
 
+/**
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -418,7 +471,7 @@ void Error_Handler(void)
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
-  * where the assert_param error has occurred.
+  *         where the assert_param error has occurred.
   * @param  file: pointer to the source file name
   * @param  line: assert_param error line source number
   * @retval None

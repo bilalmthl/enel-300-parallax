@@ -147,19 +147,31 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	  HCSR04_Trigger();     // send 10 Âµs pulse
-	      HAL_Delay(50);        // wait for echo to be captured
+	              HAL_Delay(50);        // wait for echo to be captured
 
-	      int dist = (int)Distance;
+	              int dist = (int)Distance;
 
-	      char msg[8];
-	      sprintf(msg,"%03d\n",dist);
+	              // Increased buffer size to 32 to prevent overflow crashes
+	              char msg[32];
 
-	      HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
+	              // --- FIXED-WIDTH LOGIC ---
+	              if (dist > 130)
+	              {
+	                  // Exactly 16 characters + newline
+	                  sprintf(msg, "TOO FAR         \n");
+	              }
+	              else
+	              {
+	                  // %-3d forces the number to ALWAYS take 3 spaces (e.g. "25 ")
+	                  // This guarantees the '1' gets overwritten by a blank space.
+	                  sprintf(msg, "%-3d cm          \n", dist);
+	              }
 
+	              // Transmit the chosen string
+	              HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+	              HAL_Delay(500);
 
-	      HAL_Delay(500);
-
-	      printf("Distance: %.2f cm\r\n", Distance);
+	              printf("Distance: %.2f cm\r\n", Distance);
 
 //	  HCSR04_Trigger();
 //	      HAL_Delay(50);

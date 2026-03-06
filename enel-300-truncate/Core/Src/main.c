@@ -109,13 +109,11 @@ int main(void)
 
   lcd_init();
 
-  lcd_put_cur(0,0);
-  lcd_send_string("LCD TEST");
+  lcd_put_cur(0,4);
+  lcd_send_string("DISTANCE:");
 
-  lcd_put_cur(1,0);
-  lcd_send_string("Controller OK");
 
-  HAL_Delay(15000);   // allow HC05 to boot
+  HAL_Delay(2000);   // allow HC05 to boot
 
 //  char cmd1[] = "AT+ROLE=1\r\n";      // make MASTER
 //  HAL_UART_Transmit(&huart1,(uint8_t*)cmd1,strlen(cmd1),HAL_MAX_DELAY);
@@ -147,26 +145,32 @@ int main(void)
 //	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
 
 	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
-	      {
-	          if (ch == '\n')   // end of message
-	          {
-	              buffer[index] = '\0';
+	  	  	      {
+	  	  	          if (ch == '\n')   // end of message
+	  	  	          {
+	  	  	        	buffer[index] = '\0';
 
-	              lcd_put_cur(1,0);
-	              lcd_send_string("                "); // clear row
-	              lcd_put_cur(1,0);
-	              lcd_send_string(buffer);
+	  	  	        	/* Clear second row /
+	  	  	        	lcd_put_cur(1,0);
+	  	  	        	lcd_send_string("                ");
 
-	              index = 0;
-	          }
-	          else
-	          {
-	              if(index < 15)
-	              {
-	                  buffer[index++] = ch;
-	              }
-	          }
-	      }
+	  	  	        	/ Calculate center position */
+	  	  	        	int len = strlen(buffer);
+	  	  	        	int col = (16 - len) / 2;
+
+	  	  	        	lcd_put_cur(1,col);
+	  	  	        	lcd_send_string(buffer);
+
+	  	  	        	index = 0;
+	  	  	          }
+	  	  	          else
+	  	  	          {
+	  	  	              if(index < 15)
+	  	  	              {
+	  	  	                  buffer[index++] = ch;
+	  	  	              }
+	  	  	          }
+	  	  	      }
 
 
 //	  {

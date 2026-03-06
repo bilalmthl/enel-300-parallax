@@ -158,13 +158,13 @@ int main(void)
 	              if (dist > 130)
 	              {
 	                  // Exactly 16 characters + newline
-	                  sprintf(msg, "TOO FAR         \n");
+	            	  sprintf(msg, "    TOO FAR     \n");   // centered manually
 	              }
 	              else
 	              {
 	                  // %-3d forces the number to ALWAYS take 3 spaces (e.g. "25 ")
 	                  // This guarantees the '1' gets overwritten by a blank space.
-	                  sprintf(msg, "%-3d cm          \n", dist);
+	                  sprintf(msg, "     %-3dcm     \n", dist);
 	              }
 
 	              // Transmit the chosen string

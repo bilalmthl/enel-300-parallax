@@ -17,8 +17,8 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include <liquidcrystal_i2c.h>
 #include "main.h"
+#include <liquidcrystal_i2c.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -52,6 +52,11 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 char rx_buffer[50];
+
+char btRxLine[64];
+uint8_t btRxIndex = 0;
+
+uint32_t lastControlSendMs = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -62,7 +67,11 @@ static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
+uint16_t Read_ADC_Channel(uint32_t channel);
+void Send_ControlPacket(void);
+void Process_BT_Receive(void);
+void Update_LCD_Line2(const char *text);
+uint16_t Apply_ADC_Deadband(uint16_t value, uint16_t center, uint16_t band);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -105,15 +114,20 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-
-
   lcd_init();
 
-  lcd_put_cur(0,4);
+  lcd_put_cur(0, 4);
   lcd_send_string("DISTANCE:");
 
+  lcd_put_cur(1, 0);
+  lcd_send_string("                ");
 
-  HAL_Delay(2000);   // allow HC05 to boot
+  HAL_Delay(2000);
+
+  lastControlSendMs = HAL_GetTick();
+
+  printf("Controller ready\r\n");
+   // allow HC05 to boot
 
 //  char cmd1[] = "AT+ROLE=1\r\n";      // make MASTER
 //  HAL_UART_Transmit(&huart1,(uint8_t*)cmd1,strlen(cmd1),HAL_MAX_DELAY);
@@ -133,9 +147,9 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 //hi
-  char buffer[32];
-  uint8_t index = 0;
-  uint8_t ch;
+//  char buffer[32];
+//  uint8_t index = 0;
+//  uint8_t ch;
 
   while (1)
   {
@@ -143,34 +157,43 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 //	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
+	    uint32_t now = HAL_GetTick();
 
-	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
-	  	  	      {
-	  	  	          if (ch == '\n')   // end of message
-	  	  	          {
-	  	  	        	buffer[index] = '\0';
+	    if ((now - lastControlSendMs) >= 20)
+	    {
+	        lastControlSendMs = now;
+	        Send_ControlPacket();
+	    }
 
-	  	  	        	/* Clear second row /
-	  	  	        	lcd_put_cur(1,0);
-	  	  	        	lcd_send_string("                ");
-
-	  	  	        	/ Calculate center position */
-	  	  	        	int len = strlen(buffer);
-	  	  	        	int col = (16 - len) / 2;
-
-	  	  	        	lcd_put_cur(1,col);
-	  	  	        	lcd_send_string(buffer);
-
-	  	  	        	index = 0;
-	  	  	          }
-	  	  	          else
-	  	  	          {
-	  	  	              if(index < 15)
-	  	  	              {
-	  	  	                  buffer[index++] = ch;
-	  	  	              }
-	  	  	          }
-	  	  	      }
+	    Process_BT_Receive();
+////
+//	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
+//	  	  	      {
+//	  	  	          if (ch == '\n')   // end of message
+//	  	  	          {
+//	  	  	        	buffer[index] = '\0';
+//
+//	  	  	        	/* Clear second row /
+//	  	  	        	lcd_put_cur(1,0);
+//	  	  	        	lcd_send_string("                ");
+//
+//	  	  	        	/ Calculate center position */
+//	  	  	        	int len = strlen(buffer);
+//	  	  	        	int col = (16 - len) / 2;
+//
+//	  	  	        	lcd_put_cur(1,col);
+//	  	  	        	lcd_send_string(buffer);
+//
+//	  	  	        	index = 0;
+//	  	  	          }
+//	  	  	          else
+//	  	  	          {
+//	  	  	              if(index < 15)
+//	  	  	              {
+//	  	  	                  buffer[index++] = ch;
+//	  	  	              }
+//	  	  	          }
+//	  	  	      }
 
 
 //	  {
@@ -393,7 +416,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 38400;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -437,6 +460,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : PC0 PC1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
   /*Configure GPIO pin : LD2_Pin */
   GPIO_InitStruct.Pin = LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -450,12 +479,114 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+uint16_t Apply_ADC_Deadband(uint16_t value, uint16_t center, uint16_t band)
+{
+    if (value > (center - band) && value < (center + band))
+        return center;
+    return value;
+}
+
 int _write(int file, char *ptr, int len)
 {
     HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, HAL_MAX_DELAY);
     return len;
 }
 
+uint16_t Read_ADC_Channel(uint32_t channel)
+{
+    ADC_ChannelConfTypeDef sConfig = {0};
+    uint32_t sum = 0;
+
+    sConfig.Channel = channel;
+    sConfig.Rank = 1;
+    sConfig.SamplingTime = ADC_SAMPLETIME_84CYCLES;
+
+    HAL_ADC_ConfigChannel(&hadc1, &sConfig);
+
+    for (int i = 0; i < 4; i++)
+    {
+        HAL_ADC_Start(&hadc1);
+        HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+        sum += HAL_ADC_GetValue(&hadc1);
+        HAL_ADC_Stop(&hadc1);
+    }
+
+    return (uint16_t)(sum / 4);
+}
+
+void Update_LCD_Line2(const char *text)
+{
+    char line[17];
+    int len = strlen(text);
+
+    memset(line, ' ', 16);
+    line[16] = '\0';
+
+    if (len > 16) len = 16;
+    memcpy(line, text, len);
+
+    lcd_put_cur(1, 0);
+    lcd_send_string(line);
+}
+
+
+void Send_ControlPacket(void)
+{
+    uint16_t joy1_x = Read_ADC_Channel(ADC_CHANNEL_0); // PA0
+    uint16_t joy2_y = Read_ADC_Channel(ADC_CHANNEL_8); // PB0
+
+    // strong deadband around center
+    if (joy1_x > 1848 && joy1_x < 2248) joy1_x = 2048;
+    if (joy2_y > 1848 && joy2_y < 2248) joy2_y = 2048;
+
+    char tx[32];
+    snprintf(tx, sizeof(tx), "C,%u,%u\n", joy2_y, joy1_x);
+
+    HAL_UART_Transmit(&huart1, (uint8_t*)tx, strlen(tx), 20);
+}
+
+void Process_BT_Receive(void)
+{
+    uint8_t ch;
+
+    while (HAL_UART_Receive(&huart1, &ch, 1, 0) == HAL_OK)
+    {
+        if (ch == '\n')
+        {
+            btRxLine[btRxIndex] = '\0';
+
+            if (btRxLine[0] == 'D' && btRxLine[1] == ',')
+            {
+                int dist = atoi(&btRxLine[2]);
+                char line[17];
+
+                if (dist == 999)
+                {
+                    snprintf(line, sizeof(line), "    TOO FAR     ");
+                }
+                else
+                {
+                    snprintf(line, sizeof(line), "     %-3dcm     ", dist);
+                }
+
+                Update_LCD_Line2(line);
+            }
+
+            btRxIndex = 0;
+        }
+        else if (ch != '\r')
+        {
+            if (btRxIndex < sizeof(btRxLine) - 1)
+            {
+                btRxLine[btRxIndex++] = ch;
+            }
+            else
+            {
+                btRxIndex = 0;
+            }
+        }
+    }
+}
 /* USER CODE END 4 */
 
 /**

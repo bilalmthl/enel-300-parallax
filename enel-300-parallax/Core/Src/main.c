@@ -18,6 +18,9 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -51,11 +54,26 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+
 uint32_t IC_Val1 = 0;
 uint32_t IC_Val2 = 0;
 uint8_t  Is_First_Captured = 0;
 uint32_t Difference = 0;
 volatile float Distance = 0.0f;
+
+char btRxLine[64];
+uint8_t btRxIndex = 0;
+
+int throttle_raw = 2048;
+int steering_raw = 2048;
+int joy1_btn = 0;
+int joy2_btn = 0;
+
+uint32_t lastControlPacketMs = 0;
+uint32_t lastDistanceSendMs = 0;
+uint32_t lastTriggerMs = 0;
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -70,6 +88,14 @@ static void MX_TIM1_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 void HCSR04_Trigger(void);
+uint16_t clamp_u16(int val, int min, int max);
+int map_adc_to_motor_percent(int adc);
+uint16_t map_adc_to_servo_pulse(int adc);
+void Motor_SetPercent(int percent);
+void Servo_SetPulse(uint16_t pulse);
+void Process_ControlPacket(char *line);
+void Send_DistancePacket(void);
+void Process_BT_Receive(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -123,18 +149,20 @@ int main(void)
 //    uint8_t last_button_state = 1;    // The Blue button is normally HIGH
 //
     // 2. Start all Hardware Timers
-    HAL_TIM_Base_Start(&htim1);
-    HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
-    HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
-  HAL_Delay(2000);   // wait for HC05 to fully boot
+  HAL_TIM_Base_Start(&htim1);
+  HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
 
-  char cmd[]="AT+UART=9600,0,0\r\n";
-  HAL_UART_Transmit(&huart1,(uint8_t*)cmd,strlen(cmd),HAL_MAX_DELAY);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);   // motor PWM
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);   // servo PWM
 
-  printf("AT command sent\r\n");
+  Servo_SetPulse(1500);                       // center steering
+  Motor_SetPercent(0);                        // motor off
+
+  lastControlPacketMs = HAL_GetTick();
+  lastDistanceSendMs = HAL_GetTick();
+  lastTriggerMs = HAL_GetTick();
+
+  printf("Car ready\r\n");
 
   /* USER CODE END 2 */
 
@@ -146,32 +174,30 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  HCSR04_Trigger();     // send 10 Âµs pulse
-	              HAL_Delay(50);        // wait for echo to be captured
+	    Process_BT_Receive();
 
-	              int dist = (int)Distance;
+	    uint32_t now = HAL_GetTick();
 
-	              // Increased buffer size to 32 to prevent overflow crashes
-	              char msg[32];
+	    // trigger ultrasonic periodically
+	    if ((now - lastTriggerMs) >= 80)
+	    {
+	        lastTriggerMs = now;
+	        HCSR04_Trigger();
+	    }
 
-	              // --- FIXED-WIDTH LOGIC ---
-	              if (dist > 130)
-	              {
-	                  // Exactly 16 characters + newline
-	            	  sprintf(msg, "    TOO FAR     \n");   // centered manually
-	              }
-	              else
-	              {
-	                  // %-3d forces the number to ALWAYS take 3 spaces (e.g. "25 ")
-	                  // This guarantees the '1' gets overwritten by a blank space.
-	                  sprintf(msg, "     %-3dcm     \n", dist);
-	              }
+	    // send distance text back to controller periodically
+	    if ((now - lastDistanceSendMs) >= 500)
+	    {
+	        lastDistanceSendMs = now;
+	        Send_DistancePacket();
+	    }
 
-	              // Transmit the chosen string
-	              HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
-	              HAL_Delay(500);
-
-	              printf("Distance: %.2f cm\r\n", Distance);
+	    // failsafe if controller packets stop arriving
+	    if ((now - lastControlPacketMs) > 800)
+	    {
+	        Motor_SetPercent(0);
+	        Servo_SetPulse(1500);
+	    }
 
 //	  HCSR04_Trigger();
 //	      HAL_Delay(50);
@@ -494,7 +520,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 83;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 999;
+  htim3.Init.Period = 99;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -553,7 +579,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 83;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 999;
+  htim4.Init.Period = 19999;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
@@ -576,7 +602,7 @@ static void MX_TIM4_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 1500;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
@@ -678,7 +704,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -693,8 +719,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PC7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  /*Configure GPIO pins : PC6 PC7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -712,26 +738,140 @@ int _write(int file, char *ptr, int len)
     return len;
 }
 
+uint16_t clamp_u16(int val, int min, int max)
+{
+    if (val < min) return (uint16_t)min;
+    if (val > max) return (uint16_t)max;
+    return (uint16_t)val;
+}
+
+int map_adc_to_motor_percent(int adc)
+{
+    int centered = adc - 2048;
+
+    if (centered > -350 && centered < 350)
+        return 0;
+
+    if (centered > 0)
+        return (centered * 50) / (4095 - 2048);   // capped to 50%
+    else
+        return (centered * 50) / 2048;
+}
+
+uint16_t map_adc_to_servo_pulse(int adc)
+{
+    int centered = adc - 2048;
+
+    // deadband around center to stop twitching
+    if (centered > -220 && centered < 220)
+        return 1500;
+
+    // direct mapping, no smoothing lag
+    int pulse = 1500 + (centered * 300) / 2048;
+
+    return clamp_u16(pulse, 1200, 1800);
+}
+
+void Motor_SetPercent(int percent)
+{
+    if (percent > 100) percent = 100;
+    if (percent < -100) percent = -100;
+
+    // limit max duty to 50%
+    percent = percent / 2;
+
+    if (percent >= 0)
+    {
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);    // forward
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, percent); // ARR = 99
+    }
+    else
+    {
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);  // reverse
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, -percent);
+    }
+}
+
+void Servo_SetPulse(uint16_t pulse)
+{
+    __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, pulse);
+}
+
+void Process_ControlPacket(char *line)
+{
+    int t, s;
+
+    if (sscanf(line, "C,%d,%d", &t, &s) == 2)
+    {
+        throttle_raw = t;
+        steering_raw = s;
+
+        int motor_percent = map_adc_to_motor_percent(throttle_raw);
+        uint16_t servo_pulse = map_adc_to_servo_pulse(steering_raw);
+
+        Motor_SetPercent(motor_percent);
+        Servo_SetPulse(servo_pulse);
+
+        lastControlPacketMs = HAL_GetTick();
+    }
+}
+
+void Send_DistancePacket(void)
+{
+    int dist = (int)Distance;
+    char tx[16];
+
+    if (dist > 130)
+        dist = 999;   // special value meaning TOO FAR
+
+    snprintf(tx, sizeof(tx), "D,%d\n", dist);
+    HAL_UART_Transmit(&huart1, (uint8_t*)tx, strlen(tx), 20);
+}
+
+void Process_BT_Receive(void)
+{
+    uint8_t ch;
+
+    while (HAL_UART_Receive(&huart1, &ch, 1, 0) == HAL_OK)
+    {
+        if (ch == '\n')
+        {
+            btRxLine[btRxIndex] = '\0';
+            Process_ControlPacket(btRxLine);
+            btRxIndex = 0;
+        }
+        else if (ch != '\r')
+        {
+            if (btRxIndex < sizeof(btRxLine) - 1)
+            {
+                btRxLine[btRxIndex++] = ch;
+            }
+            else
+            {
+                btRxIndex = 0;
+            }
+        }
+    }
+}
+
 void HCSR04_Trigger(void)
 {
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);   // Trigger pin is now PC7
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
 
-    // Create a 10 microsecond delay using TIM1
     uint32_t start_time = __HAL_TIM_GET_COUNTER(&htim1);
-    while((__HAL_TIM_GET_COUNTER(&htim1) - start_time) < 10);
+    while ((__HAL_TIM_GET_COUNTER(&htim1) - start_time) < 10);
 
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
 }
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
-    if (htim->Instance == TIM1)     // if the interrupt source is channel1
+    if (htim->Instance == TIM1)
     {
-        if (Is_First_Captured == 0)   // if the first value is not captured
+        if (Is_First_Captured == 0)
         {
-            IC_Val1 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);    //read the first value
-            Is_First_Captured = 1;     // set the first value = true
-
+            IC_Val1 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+            Is_First_Captured = 1;
             __HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_FALLING);
         }
         else
@@ -746,11 +886,55 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
             Distance = (Difference * 0.0343f) / 2.0f;
 
             Is_First_Captured = 0;
-
             __HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
         }
     }
 }
+//int _write(int file, char *ptr, int len)
+//{
+//    HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, HAL_MAX_DELAY);
+//    return len;
+//}
+//
+//void HCSR04_Trigger(void)
+//{
+//    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);   // Trigger pin is now PC7
+//
+//    // Create a 10 microsecond delay using TIM1
+//    uint32_t start_time = __HAL_TIM_GET_COUNTER(&htim1);
+//    while((__HAL_TIM_GET_COUNTER(&htim1) - start_time) < 10);
+//
+//    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+//}
+//
+//void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+//{
+//    if (htim->Instance == TIM1)     // if the interrupt source is channel1
+//    {
+//        if (Is_First_Captured == 0)   // if the first value is not captured
+//        {
+//            IC_Val1 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);    //read the first value
+//            Is_First_Captured = 1;     // set the first value = true
+//
+//            __HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_FALLING);
+//        }
+//        else
+//        {
+//            IC_Val2 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+//
+//            if (IC_Val2 > IC_Val1)
+//                Difference = IC_Val2 - IC_Val1;
+//            else
+//                Difference = (0xFFFF - IC_Val1) + IC_Val2;
+//
+//            Distance = (Difference * 0.0343f) / 2.0f;
+//
+//            Is_First_Captured = 0;
+//
+//            __HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
+//        }
+//    }
+//}
 /* USER CODE END 4 */
 
 /**

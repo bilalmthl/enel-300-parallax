@@ -162,6 +162,12 @@ int main(void)
   lastDistanceSendMs = HAL_GetTick();
   lastTriggerMs = HAL_GetTick();
 
+  uint32_t start = HAL_GetTick();
+  while ((HAL_GetTick() - start) < 300)
+  {
+      Process_BT_Receive();
+  }
+
   printf("Car ready\r\n");
 
   /* USER CODE END 2 */
@@ -174,6 +180,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	    // LEFT
+
 	    Process_BT_Receive();
 
 	    uint32_t now = HAL_GetTick();
@@ -186,7 +194,7 @@ int main(void)
 	    }
 
 	    // send distance text back to controller periodically
-	    if ((now - lastDistanceSendMs) >= 500)
+	    if ((now - lastDistanceSendMs) >= 700)
 	    {
 	        lastDistanceSendMs = now;
 	        Send_DistancePacket();
@@ -749,7 +757,8 @@ int map_adc_to_motor_percent(int adc)
 {
     int centered = adc - 2048;
 
-    if (centered > -350 && centered < 350)
+    // small deadband for immediate response
+    if (centered > -80 && centered < 80)
         return 0;
 
     if (centered > 0)
@@ -760,16 +769,16 @@ int map_adc_to_motor_percent(int adc)
 
 uint16_t map_adc_to_servo_pulse(int adc)
 {
-    int centered = adc - 2048;
+    int centered = adc - 2050;
 
-    // deadband around center to stop twitching
-    if (centered > -220 && centered < 220)
+    // small deadband
+    if (centered > -60 && centered < 60)
         return 1500;
 
-    // direct mapping, no smoothing lag
-    int pulse = 1500 + (centered * 300) / 2048;
+    // slightly amplified steering range
+    int pulse = 1500 + (centered * 1300) / 2048;
 
-    return clamp_u16(pulse, 1200, 1800);
+    return clamp_u16(pulse, 500, 2500);
 }
 
 void Motor_SetPercent(int percent)
@@ -797,6 +806,24 @@ void Servo_SetPulse(uint16_t pulse)
     __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, pulse);
 }
 
+//void Process_ControlPacket(char *line)
+//{
+//    int t, s;
+//
+//    if (sscanf(line, "C,%d,%d", &t, &s) == 2)
+//    {
+//        throttle_raw = t;
+//        steering_raw = s;
+//
+//        int motor_percent = map_adc_to_motor_percent(throttle_raw);
+//        uint16_t servo_pulse = map_adc_to_servo_pulse(steering_raw);
+//
+//        Motor_SetPercent(motor_percent);
+//        Servo_SetPulse(servo_pulse);
+//
+//        lastControlPacketMs = HAL_GetTick();
+//    }
+//}
 void Process_ControlPacket(char *line)
 {
     int t, s;

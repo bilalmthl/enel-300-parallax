@@ -21,6 +21,7 @@
 #include <liquidcrystal_i2c.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -124,7 +125,8 @@ int main(void)
 
   HAL_Delay(2000);
 
-  lastControlSendMs = HAL_GetTick();
+  lastControlSendMs = HAL_GetTick() - 30;
+  Send_ControlPacket();
 
   printf("Controller ready\r\n");
    // allow HC05 to boot
@@ -159,7 +161,7 @@ int main(void)
 //	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
 	    uint32_t now = HAL_GetTick();
 
-	    if ((now - lastControlSendMs) >= 20)
+	    if ((now - lastControlSendMs) >= 15)
 	    {
 	        lastControlSendMs = now;
 	        Send_ControlPacket();
@@ -532,12 +534,12 @@ void Update_LCD_Line2(const char *text)
 
 void Send_ControlPacket(void)
 {
-    uint16_t joy1_x = Read_ADC_Channel(ADC_CHANNEL_0); // PA0
-    uint16_t joy2_y = Read_ADC_Channel(ADC_CHANNEL_8); // PB0
+    uint16_t joy1_x = Read_ADC_Channel(ADC_CHANNEL_0); // PA0 = SW1_X
+    uint16_t joy2_y = Read_ADC_Channel(ADC_CHANNEL_8); // PB0 = SW2_Y
 
-    // strong deadband around center
-    if (joy1_x > 1848 && joy1_x < 2248) joy1_x = 2048;
-    if (joy2_y > 1848 && joy2_y < 2248) joy2_y = 2048;
+    // small deadband only
+    if (joy1_x > 2000 && joy1_x < 2096) joy1_x = 2048;
+    if (joy2_y > 2000 && joy2_y < 2096) joy2_y = 2048;
 
     char tx[32];
     snprintf(tx, sizeof(tx), "C,%u,%u\n", joy2_y, joy1_x);

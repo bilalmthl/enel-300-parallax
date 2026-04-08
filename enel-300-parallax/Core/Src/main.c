@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <liquidcrystal_i2c.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -69,10 +70,13 @@ int steering_raw = 2048;
 int joy1_btn = 0;
 int joy2_btn = 0;
 
+uint8_t led_state = 0;
+uint8_t last_b1_state = 0;
+
 uint32_t lastControlPacketMs = 0;
 uint32_t lastDistanceSendMs = 0;
 uint32_t lastTriggerMs = 0;
-
+uint32_t lastTestSendMs = 0;
 
 /* USER CODE END PV */
 
@@ -143,7 +147,13 @@ int main(void)
 
   // 1. Declare Variables FIRST to keep the compiler happy
   /* USER CODE BEGIN 2 */
+  lcd_init();
+  HAL_Delay(100);
 
+  lcd_put_cur(0, 0);
+  lcd_send_string("Distance:");
+//  lcd_put_cur(1, 0);
+//  lcd_send_string("                ");
     // 1. Declare Variables FIRST to keep the compiler happy
     //uint8_t transmit_latch = 0;       // 0 = Paused, 1 = Transmitting
 //    uint8_t last_button_state = 1;    // The Blue button is normally HIGH
@@ -174,6 +184,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  //char buffer_o[25];
 
   while (1)
   {
@@ -182,30 +193,99 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	    // LEFT
 
-	    Process_BT_Receive();
+//	  Process_BT_Receive();
+//
+//	  uint32_t now = HAL_GetTick();
+//
+//	  if ((now - lastTriggerMs) >= 80)
+//	  {
+//	      lastTriggerMs = now;
+//
+//	      HCSR04_Trigger();
+//	  }
+//
+//	  if ((now - lastDistanceSendMs) >= 500)
+//	  {
+//	      lastDistanceSendMs = now;
+//
+//	      int rounded = (int)Distance;
+//
+//	      if (rounded < 0)   rounded = 0;
+//	      if (rounded > 400) rounded = 400;
+//
+//	      int len = snprintf(buffer_o, sizeof(buffer_o), "%d\n", rounded);
+//	      HAL_UART_Transmit(&huart1, (uint8_t *)buffer_o, len, HAL_MAX_DELAY);
+//	  }
+	  while (1)
+	  {
+	      Process_BT_Receive();
 
-	    uint32_t now = HAL_GetTick();
+	      uint32_t now = HAL_GetTick();
 
-	    // trigger ultrasonic periodically
-	    if ((now - lastTriggerMs) >= 80)
-	    {
-	        lastTriggerMs = now;
-	        HCSR04_Trigger();
-	    }
+	      if ((now - lastTriggerMs) >= 80)
+	      {
+	          lastTriggerMs = now;
+	          HCSR04_Trigger();
+	      }
 
-	    // send distance text back to controller periodically
-	    if ((now - lastDistanceSendMs) >= 700)
-	    {
-	        lastDistanceSendMs = now;
-	        Send_DistancePacket();
-	    }
+	      if ((now - lastDistanceSendMs) >= 500)
+	      {
+	          lastDistanceSendMs = now;
 
-	    // failsafe if controller packets stop arriving
-	    if ((now - lastControlPacketMs) > 800)
-	    {
-	        Motor_SetPercent(0);
-	        Servo_SetPulse(1500);
-	    }
+	          int dist = (int)Distance;
+	          char btMsg[20];
+
+	          if (dist <= 0 || dist > 400)
+	          {
+	              strcpy(btMsg, "TOO FAR\n");
+	          }
+	          else
+	          {
+	              snprintf(btMsg, sizeof(btMsg), "%d\n", dist);
+	          }
+
+	          HAL_UART_Transmit(&huart1, (uint8_t*)btMsg, strlen(btMsg), HAL_MAX_DELAY);
+	      }
+
+	      if ((now - lastControlPacketMs) > 800)
+	      {
+	          Motor_SetPercent(0);
+	          Servo_SetPulse(1500);
+	      }
+	  }
+//	      // send distance directly from here
+//	      if ((now - lastDistanceSendMs) >= 500)S
+//	      {
+//	          lastDistanceSendMs = now;
+//
+//	          int dist = (int)Distance;
+//	          char msg[32];
+//
+//	          if (dist > 130 || dist <= 0)
+//	          {
+//	              sprintf(msg, "    TOO FAR     \n");
+//	          }
+//	          else
+//	          {
+//	              sprintf(msg, "     %-3dcm     \n", dist);
+//	          }
+//
+//	          HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+//	      }
+
+//	      if ((now % 1000) < 20)   // every ~1 second
+//	      {
+//	          char msg[] = "HELLO TEST\n";
+//	          HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+//	      }
+//
+//	      // failsafe if controller packets stop arriving
+//	      if ((now - lastControlPacketMs) > 800)
+//	      {
+//	          Motor_SetPercent(0);
+//	          Servo_SetPulse(1500);
+//	      }
+
 
 //	  HCSR04_Trigger();
 //	      HAL_Delay(50);
@@ -712,7 +792,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -727,8 +807,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PC6 PC7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
+  /*Configure GPIO pins : PC6 PC7 PC8 PC9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -826,9 +906,9 @@ void Servo_SetPulse(uint16_t pulse)
 //}
 void Process_ControlPacket(char *line)
 {
-    int t, s;
+    int t, s, b1_state = 0;
 
-    if (sscanf(line, "C,%d,%d", &t, &s) == 2)
+    if (sscanf(line, "C,%d,%d,%d", &t, &s, &b1_state) >= 2)
     {
         throttle_raw = t;
         steering_raw = s;
@@ -839,6 +919,22 @@ void Process_ControlPacket(char *line)
         Motor_SetPercent(motor_percent);
         Servo_SetPulse(servo_pulse);
 
+        // toggle on button press edge
+        if (b1_state == 1 && last_b1_state == 0)
+        {
+            led_state = !led_state;
+        }
+
+        if (led_state)
+        {
+            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9, GPIO_PIN_SET);
+        }
+        else
+        {
+            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9, GPIO_PIN_RESET);
+        }
+
+        last_b1_state = b1_state;
         lastControlPacketMs = HAL_GetTick();
     }
 }
@@ -846,12 +942,17 @@ void Process_ControlPacket(char *line)
 void Send_DistancePacket(void)
 {
     int dist = (int)Distance;
-    char tx[16];
+    char tx[32];
 
-    if (dist > 130)
-        dist = 999;   // special value meaning TOO FAR
+    if (dist > 130 || dist <= 0)
+    {
+        sprintf(tx, "D,TOO FAR\n");
+    }
+    else
+    {
+        sprintf(tx, "D,%d\n", dist);
+    }
 
-    snprintf(tx, sizeof(tx), "D,%d\n", dist);
     HAL_UART_Transmit(&huart1, (uint8_t*)tx, strlen(tx), 20);
 }
 

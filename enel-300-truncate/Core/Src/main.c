@@ -1,3 +1,5 @@
+//controller code for ultrasonic distance sensor with bluetooth and LCD display
+
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
@@ -116,12 +118,14 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   lcd_init();
+  lcd_put_cur(0,0);
+  lcd_send_string("Distance:");
 
-  lcd_put_cur(0, 4);
-  lcd_send_string("DISTANCE:");
-
-  lcd_put_cur(1, 0);
-  lcd_send_string("                ");
+//  lcd_put_cur(0, 4);
+////  lcd_send_string("DISTANCE:");
+//
+//  lcd_put_cur(1, 0);
+//  lcd_send_string("                ");
 
   HAL_Delay(2000);
 
@@ -153,22 +157,48 @@ int main(void)
 //  uint8_t index = 0;
 //  uint8_t ch;
 
+
+  char buffer[20];
+  uint8_t index = 0;
+  uint8_t ch;
+//  uint8_t ch;
+
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 //	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
-	    uint32_t now = HAL_GetTick();
+	  uint32_t now = HAL_GetTick();
 
-	    if ((now - lastControlSendMs) >= 15)
-	    {
-	        lastControlSendMs = now;
-	        Send_ControlPacket();
-	    }
+	      if ((now - lastControlSendMs) >= 15)
+	      {
+	          lastControlSendMs = now;
+	          Send_ControlPacket();
+	      }
 
-	    Process_BT_Receive();
-////
+	      if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
+	          {
+	              if (ch == '\n')
+	              {
+	                  buffer[index] = '\0';
+
+	                  lcd_put_cur(1,0);
+	                  lcd_send_string("                ");
+	                  lcd_put_cur(1,0);
+	                  lcd_send_string(buffer);
+
+	                  index = 0;
+	              }
+	              else
+	              {
+	                  if (index < sizeof(buffer) - 1)
+	                  {
+	                      buffer[index++] = ch;
+	                  }
+	              }
+	          }
+
 //	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
 //	  	  	      {
 //	  	  	          if (ch == '\n')   // end of message
@@ -541,50 +571,45 @@ void Send_ControlPacket(void)
     if (joy1_x > 2000 && joy1_x < 2096) joy1_x = 2048;
     if (joy2_y > 2000 && joy2_y < 2096) joy2_y = 2048;
 
+    // Read B1 state (Assumes active-low. GPIO_PIN_RESET means button is pressed)
+    uint8_t b1_pressed = (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET) ? 1 : 0;
+
     char tx[32];
-    snprintf(tx, sizeof(tx), "C,%u,%u\n", joy2_y, joy1_x);
+    // Format: "C,throttle,steering,b1_state\n"
+    snprintf(tx, sizeof(tx), "C,%u,%u,%d\n", joy2_y, joy1_x, b1_pressed);
 
     HAL_UART_Transmit(&huart1, (uint8_t*)tx, strlen(tx), 20);
 }
 
 void Process_BT_Receive(void)
 {
+    static char buffer[32];
+    static uint8_t index = 0;
     uint8_t ch;
 
     while (HAL_UART_Receive(&huart1, &ch, 1, 0) == HAL_OK)
     {
         if (ch == '\n')
         {
-            btRxLine[btRxIndex] = '\0';
+            buffer[index] = '\0';
 
-            if (btRxLine[0] == 'D' && btRxLine[1] == ',')
-            {
-                int dist = atoi(&btRxLine[2]);
-                char line[17];
+            lcd_put_cur(1, 0);
+            lcd_send_string("                ");
 
-                if (dist == 999)
-                {
-                    snprintf(line, sizeof(line), "    TOO FAR     ");
-                }
-                else
-                {
-                    snprintf(line, sizeof(line), "     %-3dcm     ", dist);
-                }
+            int len = strlen(buffer);
+            int col = (16 - len) / 2;
+            if (col < 0) col = 0;
 
-                Update_LCD_Line2(line);
-            }
+            lcd_put_cur(1, col);
+            lcd_send_string(buffer);
 
-            btRxIndex = 0;
+            index = 0;
         }
-        else if (ch != '\r')
+        else
         {
-            if (btRxIndex < sizeof(btRxLine) - 1)
+            if (ch != '\r' && index < 15)
             {
-                btRxLine[btRxIndex++] = ch;
-            }
-            else
-            {
-                btRxIndex = 0;
+                buffer[index++] = ch;
             }
         }
     }

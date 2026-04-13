@@ -228,23 +228,31 @@ int main(void)
 	          HCSR04_Trigger();
 	      }
 
-	      if ((now - lastDistanceSendMs) >= 500)
+        if ((now - lastDistanceSendMs) >= 300)
 	      {
 	          lastDistanceSendMs = now;
 
-	          int dist = (int)Distance;
+            float dist = Distance;
 	          char btMsg[20];
 
-	          if (dist <= 0 || dist > 400)
+            if (dist <= 0.0f || dist > 400.0f)
 	          {
-	              strcpy(btMsg, "TOO FAR\n");
+	              strcpy(btMsg, "D:TOO FAR\n");
 	          }
 	          else
 	          {
-	              snprintf(btMsg, sizeof(btMsg), "%d\n", dist);
+                int whole = (int)dist;
+                int tenth = (int)((dist - (float)whole) * 10.0f + 0.5f);
+                if (tenth >= 10)
+                {
+                    whole += 1;
+                    tenth = 0;
+                }
+                snprintf(btMsg, sizeof(btMsg), "D:%d.%d\n", whole, tenth);
 	          }
 
 	          HAL_UART_Transmit(&huart1, (uint8_t*)btMsg, strlen(btMsg), HAL_MAX_DELAY);
+	          printf("CAR TX: %s", btMsg);
 	      }
 
 	      if ((now - lastControlPacketMs) > 800)
@@ -941,16 +949,23 @@ void Process_ControlPacket(char *line)
 
 void Send_DistancePacket(void)
 {
-    int dist = (int)Distance;
+    float dist = Distance;
     char tx[32];
 
-    if (dist > 130 || dist <= 0)
+    if (dist > 130.0f || dist <= 0.0f)
     {
-        sprintf(tx, "D,TOO FAR\n");
+        sprintf(tx, "D:TOO FAR\n");
     }
     else
     {
-        sprintf(tx, "D,%d\n", dist);
+        int whole = (int)dist;
+        int tenth = (int)((dist - (float)whole) * 10.0f + 0.5f);
+        if (tenth >= 10)
+        {
+            whole += 1;
+            tenth = 0;
+        }
+        sprintf(tx, "D:%d.%d\n", whole, tenth);
     }
 
     HAL_UART_Transmit(&huart1, (uint8_t*)tx, strlen(tx), 20);

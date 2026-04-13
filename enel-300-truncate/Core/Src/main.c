@@ -1,5 +1,3 @@
-//controller code for ultrasonic distance sensor with bluetooth and LCD display
-
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
@@ -23,7 +21,6 @@
 #include <liquidcrystal_i2c.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -60,6 +57,8 @@ char btRxLine[64];
 uint8_t btRxIndex = 0;
 
 uint32_t lastControlSendMs = 0;
+
+#define CONTROL_TX_PERIOD_MS 40U
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -118,7 +117,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   lcd_init();
-  lcd_put_cur(0,0);
+  lcd_put_cur(0,3);
   lcd_send_string("Distance:");
 
 //  lcd_put_cur(0, 4);
@@ -158,47 +157,21 @@ int main(void)
 //  uint8_t ch;
 
 
-  char buffer[20];
-  uint8_t index = 0;
-  uint8_t ch;
-//  uint8_t ch;
-
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 //	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
-	  uint32_t now = HAL_GetTick();
+    uint32_t now = HAL_GetTick();
 
-	      if ((now - lastControlSendMs) >= 15)
-	      {
-	          lastControlSendMs = now;
-	          Send_ControlPacket();
-	      }
+    if ((now - lastControlSendMs) >= CONTROL_TX_PERIOD_MS)
+    {
+        lastControlSendMs = now;
+        Send_ControlPacket();
+    }
 
-	      if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
-	          {
-	              if (ch == '\n')
-	              {
-	                  buffer[index] = '\0';
-
-	                  lcd_put_cur(1,0);
-	                  lcd_send_string("                ");
-	                  lcd_put_cur(1,0);
-	                  lcd_send_string(buffer);
-
-	                  index = 0;
-	              }
-	              else
-	              {
-	                  if (index < sizeof(buffer) - 1)
-	                  {
-	                      buffer[index++] = ch;
-	                  }
-	              }
-	          }
-
+    Process_BT_Receive();
 //	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
 //	  	  	      {
 //	  	  	          if (ch == '\n')   // end of message
@@ -448,7 +421,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 38400;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -495,7 +468,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : PC0 PC1 */
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LD2_Pin */
@@ -550,12 +523,15 @@ void Update_LCD_Line2(const char *text)
 {
     char line[17];
     int len = strlen(text);
+    int col = 0;
 
     memset(line, ' ', 16);
     line[16] = '\0';
 
     if (len > 16) len = 16;
-    memcpy(line, text, len);
+    col = (16 - len) / 2;
+    if (col < 0) col = 0;
+    memcpy(&line[col], text, len);
 
     lcd_put_cur(1, 0);
     lcd_send_string(line);
@@ -583,33 +559,79 @@ void Send_ControlPacket(void)
 
 void Process_BT_Receive(void)
 {
-    static char buffer[32];
-    static uint8_t index = 0;
     uint8_t ch;
 
     while (HAL_UART_Receive(&huart1, &ch, 1, 0) == HAL_OK)
     {
+        // Only collect frames that begin with 'D' to ignore random/noisy bytes.
+        if (btRxIndex == 0)
+        {
+            if (ch == 'D')
+            {
+                btRxLine[btRxIndex++] = (char)ch;
+            }
+            continue;
+        }
+
         if (ch == '\n')
         {
-            buffer[index] = '\0';
+            btRxLine[btRxIndex] = '\0';
 
-            lcd_put_cur(1, 0);
-            lcd_send_string("                ");
+            printf("CTRL RX RAW: %s\r\n", btRxLine);
 
-            int len = strlen(buffer);
-            int col = (16 - len) / 2;
-            if (col < 0) col = 0;
+            if (strncmp(btRxLine, "D:", 2) == 0)
+            {
+                if (strcmp(btRxLine + 2, "TOO FAR") == 0)
+                {
+                    Update_LCD_Line2("TOO FAR");
+                }
+                else
+                {
+                    const char *payload = btRxLine + 2;
+                    size_t payloadLen = strlen(payload);
+                    size_t dotCount = 0;
+                    size_t i;
+                    uint8_t valid = (payloadLen > 0) ? 1U : 0U;
 
-            lcd_put_cur(1, col);
-            lcd_send_string(buffer);
+                    for (i = 0; i < payloadLen && valid; i++)
+                    {
+                        char c = payload[i];
+                        if (c == '.')
+                        {
+                            dotCount++;
+                            if (dotCount > 1U) valid = 0U;
+                        }
+                        else if (c < '0' || c > '9')
+                        {
+                            valid = 0U;
+                        }
+                    }
 
-            index = 0;
+                    if (!valid) {
+                        btRxIndex = 0;
+                        continue;
+                    }
+
+                    char displayText[20];
+                    snprintf(displayText, sizeof(displayText), "%s cm", payload);
+                    Update_LCD_Line2(displayText);
+                }
+            }
+
+            btRxIndex = 0;
         }
         else
         {
-            if (ch != '\r' && index < 15)
+            if (ch != '\r')
             {
-                buffer[index++] = ch;
+                if (btRxIndex < sizeof(btRxLine) - 1)
+                {
+                    btRxLine[btRxIndex++] = (char)ch;
+                }
+                else
+                {
+                    btRxIndex = 0;
+                }
             }
         }
     }

@@ -857,16 +857,31 @@ int map_adc_to_motor_percent(int adc)
 
 uint16_t map_adc_to_servo_pulse(int adc)
 {
-    int centered = adc - 2050;
+    const int adc_min = 0;
+    const int adc_center = 2050;
+    const int adc_max = 4095;
+    const int pulse_min = 500;
+    const int pulse_center = 1500;
+    const int pulse_max = 2500;
 
-    // small deadband
+    int centered = adc - adc_center;
+
+    // Keep a small neutral zone to avoid jitter around center.
     if (centered > -60 && centered < 60)
-        return 1500;
+        return pulse_center;
 
-    // slightly amplified steering range
-    int pulse = 1500 + (centered * 1300) / 2048;
+    int pulse;
 
-    return clamp_u16(pulse, 500, 2500);
+    if (adc >= adc_center)
+    {
+        pulse = pulse_center + ((adc - adc_center) * (pulse_max - pulse_center)) / (adc_max - adc_center);
+    }
+    else
+    {
+        pulse = pulse_center - ((adc_center - adc) * (pulse_center - pulse_min)) / (adc_center - adc_min);
+    }
+
+    return clamp_u16(pulse, pulse_min, pulse_max);
 }
 
 void Motor_SetPercent(int percent)
@@ -875,7 +890,7 @@ void Motor_SetPercent(int percent)
     if (percent < -100) percent = -100;
 
     // limit max duty to 50%
-    percent = percent / 2;
+    percent = percent / 1.54;
 
     if (percent >= 0)
     {

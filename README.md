@@ -161,7 +161,9 @@ The system was designed to satisfy the following core requirements:
 ---
 
 ## Contributors
-
-- Saad Subhani  
+  
 - Bilal Melethil  
 - Ammaar Khaleel  
+- Saad Subhani
+- Arsalan Khan
+- Omar Taktak

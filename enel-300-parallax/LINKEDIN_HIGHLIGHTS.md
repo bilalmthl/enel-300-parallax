@@ -1,4 +1,4 @@
-# LinkedIn Highlights (Copy/Paste)
+# LinkedIn Highlights
 
 Built a two-node STM32 Bluetooth robotics system for ENEL-300:
 

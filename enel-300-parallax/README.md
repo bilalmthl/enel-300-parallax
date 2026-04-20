@@ -14,11 +14,18 @@ STM32 firmware for the **car node** in the ENEL-300 wireless parallax demo. This
 
 ```mermaid
 flowchart LR
-    C[Controller Board]\nC,throttle,steering,b1 --> BT[HC-05 Link]
-    BT --> CAR[Car STM32 Firmware]
-    CAR --> M[Motor PWM + Direction]
-    CAR --> S[Servo PWM]
-    CAR --> U[HC-SR04 Trigger/Echo]
+    C[Controller Board]
+    BT[HC-05 Link]
+    CAR[Car STM32 Firmware]
+    M[Motor PWM + Direction]
+    S[Servo PWM]
+    U[HC-SR04 Trigger/Echo]
+
+    C -->|C,throttle,steering,b1| BT
+    BT --> CAR
+    CAR --> M
+    CAR --> S
+    CAR --> U
     U --> CAR
     CAR -->|D:value| BT
     BT --> C
@@ -66,7 +73,6 @@ This is a CubeMX/STM32CubeIDE-generated project.
 - Demo media placeholders: `docs/media/`
 - Wiring photos and notes: `docs/README.md`
 - Architecture notes: `docs/architecture.md`
-- LinkedIn copy-ready highlights: `LINKEDIN_HIGHLIGHTS.md`
 
 ## Project Layout
 
@@ -74,7 +80,3 @@ This is a CubeMX/STM32CubeIDE-generated project.
 - `Core/Inc/`: HAL and app headers
 - `Drivers/`: STM32 HAL + CMSIS
 - `Debug/`: Generated build artifacts
-
-## Team Note
-
-If you are sharing this publicly, add your final demo links and wiring photos in `docs/` before posting the repository URL.

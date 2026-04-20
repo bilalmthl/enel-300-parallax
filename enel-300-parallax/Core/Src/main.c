@@ -21,7 +21,6 @@
 #include <liquidcrystal_i2c.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -67,8 +66,6 @@ uint8_t btRxIndex = 0;
 
 int throttle_raw = 2048;
 int steering_raw = 2048;
-int joy1_btn = 0;
-int joy2_btn = 0;
 
 uint8_t led_state = 0;
 uint8_t last_b1_state = 0;
@@ -76,7 +73,10 @@ uint8_t last_b1_state = 0;
 uint32_t lastControlPacketMs = 0;
 uint32_t lastDistanceSendMs = 0;
 uint32_t lastTriggerMs = 0;
-uint32_t lastTestSendMs = 0;
+
+#define ULTRASONIC_TRIGGER_PERIOD_MS 80U
+#define DISTANCE_TX_PERIOD_MS        300U
+#define CONTROL_FAILSAFE_MS          800U
 
 /* USER CODE END PV */
 
@@ -145,20 +145,14 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  // 1. Declare Variables FIRST to keep the compiler happy
-  /* USER CODE BEGIN 2 */
+  /* UI startup */
   lcd_init();
   HAL_Delay(100);
 
   lcd_put_cur(0, 0);
   lcd_send_string("Distance:");
-//  lcd_put_cur(1, 0);
-//  lcd_send_string("                ");
-    // 1. Declare Variables FIRST to keep the compiler happy
-    //uint8_t transmit_latch = 0;       // 0 = Paused, 1 = Transmitting
-//    uint8_t last_button_state = 1;    // The Blue button is normally HIGH
-//
-    // 2. Start all Hardware Timers
+
+  /* Start sensor capture + PWM outputs */
   HAL_TIM_Base_Start(&htim1);
   HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
 
@@ -184,218 +178,36 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  //char buffer_o[25];
-
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	    // LEFT
+    /* Handle incoming control commands from the remote controller. */
+    Process_BT_Receive();
 
-//	  Process_BT_Receive();
-//
-//	  uint32_t now = HAL_GetTick();
-//
-//	  if ((now - lastTriggerMs) >= 80)
-//	  {
-//	      lastTriggerMs = now;
-//
-//	      HCSR04_Trigger();
-//	  }
-//
-//	  if ((now - lastDistanceSendMs) >= 500)
-//	  {
-//	      lastDistanceSendMs = now;
-//
-//	      int rounded = (int)Distance;
-//
-//	      if (rounded < 0)   rounded = 0;
-//	      if (rounded > 400) rounded = 400;
-//
-//	      int len = snprintf(buffer_o, sizeof(buffer_o), "%d\n", rounded);
-//	      HAL_UART_Transmit(&huart1, (uint8_t *)buffer_o, len, HAL_MAX_DELAY);
-//	  }
-	  while (1)
-	  {
-	      Process_BT_Receive();
+    uint32_t now = HAL_GetTick();
 
-	      uint32_t now = HAL_GetTick();
+    /* Periodically trigger the HC-SR04 pulse. */
+    if ((now - lastTriggerMs) >= ULTRASONIC_TRIGGER_PERIOD_MS)
+    {
+        lastTriggerMs = now;
+        HCSR04_Trigger();
+    }
 
-	      if ((now - lastTriggerMs) >= 80)
-	      {
-	          lastTriggerMs = now;
-	          HCSR04_Trigger();
-	      }
+    /* Periodically publish distance over Bluetooth. */
+    if ((now - lastDistanceSendMs) >= DISTANCE_TX_PERIOD_MS)
+    {
+        lastDistanceSendMs = now;
+        Send_DistancePacket();
+    }
 
-        if ((now - lastDistanceSendMs) >= 300)
-	      {
-	          lastDistanceSendMs = now;
-
-            float dist = Distance;
-	          char btMsg[20];
-
-            if (dist <= 0.0f || dist > 400.0f)
-	          {
-	              strcpy(btMsg, "D:TOO FAR\n");
-	          }
-	          else
-	          {
-                int whole = (int)dist;
-                int tenth = (int)((dist - (float)whole) * 10.0f + 0.5f);
-                if (tenth >= 10)
-                {
-                    whole += 1;
-                    tenth = 0;
-                }
-                snprintf(btMsg, sizeof(btMsg), "D:%d.%d\n", whole, tenth);
-	          }
-
-	          HAL_UART_Transmit(&huart1, (uint8_t*)btMsg, strlen(btMsg), HAL_MAX_DELAY);
-	          printf("CAR TX: %s", btMsg);
-	      }
-
-	      if ((now - lastControlPacketMs) > 800)
-	      {
-	          Motor_SetPercent(0);
-	          Servo_SetPulse(1500);
-	      }
-	  }
-//	      // send distance directly from here
-//	      if ((now - lastDistanceSendMs) >= 500)S
-//	      {
-//	          lastDistanceSendMs = now;
-//
-//	          int dist = (int)Distance;
-//	          char msg[32];
-//
-//	          if (dist > 130 || dist <= 0)
-//	          {
-//	              sprintf(msg, "    TOO FAR     \n");
-//	          }
-//	          else
-//	          {
-//	              sprintf(msg, "     %-3dcm     \n", dist);
-//	          }
-//
-//	          HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
-//	      }
-
-//	      if ((now % 1000) < 20)   // every ~1 second
-//	      {
-//	          char msg[] = "HELLO TEST\n";
-//	          HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
-//	      }
-//
-//	      // failsafe if controller packets stop arriving
-//	      if ((now - lastControlPacketMs) > 800)
-//	      {
-//	          Motor_SetPercent(0);
-//	          Servo_SetPulse(1500);
-//	      }
-
-
-//	  HCSR04_Trigger();
-//	      HAL_Delay(50);
-//
-//	      char msg[32];
-//	      sprintf(msg,"%.1f cm\n", Distance);
-//
-//	      HAL_UART_Transmit(&huart1,(uint8_t*)msg,strlen(msg),HAL_MAX_DELAY);
-//
-//	      HAL_Delay(500);   // send twice per second
-//	  HCSR04_Trigger();
-//
-//	  printf("Dist: %.2f cm\r\n", Distance);
-//	  fflush(stdout);  // <--- Forces the text out to the console immediately
-//
-//	  HAL_Delay(1000);
-
-//	  uint8_t ch;
-//	  {
-//		    if (HAL_UART_Receive(&huart1,&ch,1,100)==HAL_OK)
-//		    {
-//		        HAL_UART_Transmit(&huart2,&ch,1,HAL_MAX_DELAY);
-//		    }
-//	  }
-//
-////	  	  	// 1. Fire the sensor and calculate distance
-////	        HCSR04_Trigger();
-//	  HAL_Delay(50);
-//
-//	  char buffer[32];
-//	  sprintf(buffer,"Distance: %.2f\n",Distance);
-//
-//	  HAL_UART_Transmit(&huart1,(uint8_t*)buffer,strlen(buffer),HAL_MAX_DELAY);
-//
-//	  HAL_Delay(200);
-//
-//	        // 2. Read the Blue Button (PC13)
-//	        uint8_t current_button_state = HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);
-//
-//	        // 3. Detect a button press (falling edge) to toggle the latch
-//	        if (current_button_state == GPIO_PIN_RESET && last_button_state == GPIO_PIN_SET)
-//	        {
-//	            transmit_latch = !transmit_latch; // Flip between 0 and 1
-//	            HAL_Delay(200);                   // Debounce the button press
-//	        }
-//	        last_button_state = current_button_state;
-//
-//	        // 4. Print to Serial Monitor so you can debug locally via USB
-//	        printf("Dist: %.2f cm | Latch: %d\r\n", Distance, transmit_latch);
-//	        fflush(stdout);
-//
-//	        // 5. If latched ON, beam the data via Bluetooth (USART1)
-//	        if (transmit_latch == 1)
-//	        {
-//	            char bt_buffer[30];
-//	            // Format the string. Adding \n helps the receiver know when the message ends.
-//	            int len = sprintf(bt_buffer, "Dist: %.2f cm\n", Distance);
-//
-//	            // Send over huart1 (PA9/PA10 to the HC-05)
-//	            HAL_UART_Transmit(&huart1, (uint8_t*)bt_buffer, len, HAL_MAX_DELAY);
-//	        }
-//
-//	        HAL_Delay(150); // Main loop delay
-
-
-//	      // Motor 1 Forward
-//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0); // PA0 (IN1) pulsing
-//	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 400);   // PB0 (IN2) off
-//
-//	      // Motor 2 Forward
-//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 400); // PA1 (IN3) pulsing
-//	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);   // PB7 (IN4) off
-//
-//	      HAL_Delay(1000);
-//
-//
-//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
-//	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
-//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
-//	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);
-//
-//	      HAL_Delay(1000);
-//
-//
-//
-//	      // Motor 1 Reverse
-//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 400);   // PA0 (IN1) off
-//	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0); // PB0 (IN2) pulsing
-//
-//	      // Motor 2 Reverse
-//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);   // PA1 (IN3) off
-//	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 400); // PB7 (IN4) pulsing
-//
-//	      HAL_Delay(750);
-//
-//
-//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
-//	      __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
-//	      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
-//	      __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);
-//
-//	      HAL_Delay(1000);
+    /* Failsafe: stop if control packets are stale. */
+    if ((now - lastControlPacketMs) > CONTROL_FAILSAFE_MS)
+    {
+        Motor_SetPercent(0);
+        Servo_SetPulse(1500);
+    }
 
   }
   /* USER CODE END 3 */
@@ -909,24 +721,6 @@ void Servo_SetPulse(uint16_t pulse)
     __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, pulse);
 }
 
-//void Process_ControlPacket(char *line)
-//{
-//    int t, s;
-//
-//    if (sscanf(line, "C,%d,%d", &t, &s) == 2)
-//    {
-//        throttle_raw = t;
-//        steering_raw = s;
-//
-//        int motor_percent = map_adc_to_motor_percent(throttle_raw);
-//        uint16_t servo_pulse = map_adc_to_servo_pulse(steering_raw);
-//
-//        Motor_SetPercent(motor_percent);
-//        Servo_SetPulse(servo_pulse);
-//
-//        lastControlPacketMs = HAL_GetTick();
-//    }
-//}
 void Process_ControlPacket(char *line)
 {
     int t, s, b1_state = 0;
@@ -967,9 +761,9 @@ void Send_DistancePacket(void)
     float dist = Distance;
     char tx[32];
 
-    if (dist > 130.0f || dist <= 0.0f)
+    if (dist > 400.0f || dist <= 0.0f)
     {
-        sprintf(tx, "D:TOO FAR\n");
+        snprintf(tx, sizeof(tx), "D:TOO FAR\n");
     }
     else
     {
@@ -980,10 +774,11 @@ void Send_DistancePacket(void)
             whole += 1;
             tenth = 0;
         }
-        sprintf(tx, "D:%d.%d\n", whole, tenth);
+        snprintf(tx, sizeof(tx), "D:%d.%d\n", whole, tenth);
     }
 
     HAL_UART_Transmit(&huart1, (uint8_t*)tx, strlen(tx), 20);
+    printf("CAR TX: %s", tx);
 }
 
 void Process_BT_Receive(void)
@@ -1048,51 +843,6 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         }
     }
 }
-//int _write(int file, char *ptr, int len)
-//{
-//    HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, HAL_MAX_DELAY);
-//    return len;
-//}
-//
-//void HCSR04_Trigger(void)
-//{
-//    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);   // Trigger pin is now PC7
-//
-//    // Create a 10 microsecond delay using TIM1
-//    uint32_t start_time = __HAL_TIM_GET_COUNTER(&htim1);
-//    while((__HAL_TIM_GET_COUNTER(&htim1) - start_time) < 10);
-//
-//    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
-//}
-//
-//void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
-//{
-//    if (htim->Instance == TIM1)     // if the interrupt source is channel1
-//    {
-//        if (Is_First_Captured == 0)   // if the first value is not captured
-//        {
-//            IC_Val1 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);    //read the first value
-//            Is_First_Captured = 1;     // set the first value = true
-//
-//            __HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_FALLING);
-//        }
-//        else
-//        {
-//            IC_Val2 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
-//
-//            if (IC_Val2 > IC_Val1)
-//                Difference = IC_Val2 - IC_Val1;
-//            else
-//                Difference = (0xFFFF - IC_Val1) + IC_Val2;
-//
-//            Distance = (Difference * 0.0343f) / 2.0f;
-//
-//            Is_First_Captured = 0;
-//
-//            __HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
-//        }
-//    }
-//}
 /* USER CODE END 4 */
 
 /**

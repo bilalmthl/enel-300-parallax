@@ -51,8 +51,6 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-char rx_buffer[50];
-
 char btRxLine[64];
 uint8_t btRxIndex = 0;
 
@@ -116,53 +114,30 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  /* UI startup */
   lcd_init();
-  lcd_put_cur(0,3);
+  lcd_put_cur(0, 3);
   lcd_send_string("Distance:");
 
-//  lcd_put_cur(0, 4);
-////  lcd_send_string("DISTANCE:");
-//
-//  lcd_put_cur(1, 0);
-//  lcd_send_string("                ");
-
+  /* Give HC-05 and the peer node time to boot */
   HAL_Delay(2000);
 
+  /* Send a first packet early so the car has immediate valid control input */
   lastControlSendMs = HAL_GetTick() - 30;
   Send_ControlPacket();
 
   printf("Controller ready\r\n");
-   // allow HC05 to boot
-
-//  char cmd1[] = "AT+ROLE=1\r\n";      // make MASTER
-//  HAL_UART_Transmit(&huart1,(uint8_t*)cmd1,strlen(cmd1),HAL_MAX_DELAY);
-//  HAL_Delay(1000);
-//
-//  char cmd2[] = "AT+CMODE=1\r\n";     // connect to any slave
-//  HAL_UART_Transmit(&huart1,(uint8_t*)cmd2,strlen(cmd2),HAL_MAX_DELAY);
-//  HAL_Delay(1000);
-//
-//  char cmd3[] = "AT+UART=9600,0,0\r\n";  // set Bluetooth speed
-//  HAL_UART_Transmit(&huart1,(uint8_t*)cmd3,strlen(cmd3),HAL_MAX_DELAY);
-//  HAL_Delay(1000);
-
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-//hi
-//  char buffer[32];
-//  uint8_t index = 0;
-//  uint8_t ch;
-
-
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-//	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
+    /* Periodic transmit of joystick + button state */
     uint32_t now = HAL_GetTick();
 
     if ((now - lastControlSendMs) >= CONTROL_TX_PERIOD_MS)
@@ -171,68 +146,8 @@ int main(void)
         Send_ControlPacket();
     }
 
+    /* Non-blocking receive of distance feedback for LCD updates */
     Process_BT_Receive();
-//	  if (HAL_UART_Receive(&huart1, &ch, 1, 100) == HAL_OK)
-//	  	  	      {
-//	  	  	          if (ch == '\n')   // end of message
-//	  	  	          {
-//	  	  	        	buffer[index] = '\0';
-//
-//	  	  	        	/* Clear second row /
-//	  	  	        	lcd_put_cur(1,0);
-//	  	  	        	lcd_send_string("                ");
-//
-//	  	  	        	/ Calculate center position */
-//	  	  	        	int len = strlen(buffer);
-//	  	  	        	int col = (16 - len) / 2;
-//
-//	  	  	        	lcd_put_cur(1,col);
-//	  	  	        	lcd_send_string(buffer);
-//
-//	  	  	        	index = 0;
-//	  	  	          }
-//	  	  	          else
-//	  	  	          {
-//	  	  	              if(index < 15)
-//	  	  	              {
-//	  	  	                  buffer[index++] = ch;
-//	  	  	              }
-//	  	  	          }
-//	  	  	      }
-
-
-//	  {
-//		    if (HAL_UART_Receive(&huart1,&ch,1,100)==HAL_OK)
-//		    {
-//		        HAL_UART_Transmit(&huart2,&ch,1,HAL_MAX_DELAY);
-//		    }
-//	  }
-//	  memset(rx_buffer, 0, sizeof(rx_buffer));
-//
-//
-//	  uint8_t index = 0;
-//	  uint8_t byte;
-//
-//	  while(HAL_UART_Receive(&huart1,&byte,1,50)==HAL_OK)
-//	  {
-//	      rx_buffer[index++] = byte;
-//
-//	      if(byte == '\n' || index >= sizeof(rx_buffer)-1)
-//	          break;
-//	  }
-//
-//	  if(index > 0)
-//	  {
-//	      lcd_clear();
-//	      lcd_put_cur(0,0);
-//	      lcd_send_string("Distance:");
-//
-//	      lcd_put_cur(1,0);
-//	      lcd_send_string(rx_buffer);
-//	  }
-//
-//
-//	      HAL_Delay(50); // Small stability delay
   }
 
   }
@@ -543,9 +458,9 @@ void Send_ControlPacket(void)
     uint16_t joy1_x = Read_ADC_Channel(ADC_CHANNEL_0); // PA0 = SW1_X
     uint16_t joy2_y = Read_ADC_Channel(ADC_CHANNEL_8); // PB0 = SW2_Y
 
-    // small deadband only
-    if (joy1_x > 2000 && joy1_x < 2096) joy1_x = 2048;
-    if (joy2_y > 2000 && joy2_y < 2096) joy2_y = 2048;
+    /* Apply a small center deadband to reduce idle jitter */
+    joy1_x = Apply_ADC_Deadband(joy1_x, 2048, 48);
+    joy2_y = Apply_ADC_Deadband(joy2_y, 2048, 48);
 
     // Read B1 state (Assumes active-low. GPIO_PIN_RESET means button is pressed)
     uint8_t b1_pressed = (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET) ? 1 : 0;

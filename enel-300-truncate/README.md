@@ -57,7 +57,7 @@ Only numeric payloads (with optional single decimal point) are accepted for dist
 ## Docs
 
 - Docs checklist and media guidance: `docs/README.md`
-- Add demo photos/videos under `docs/media/`
+- Demo photos under `docs/media/`
 
 ## Project Layout
 

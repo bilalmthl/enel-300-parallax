@@ -1,36 +1,80 @@
-# Docs Checklist (Car Firmware)
+# Vehicle Firmware and Hardware Documentation
 
-Use this folder to make the repository presentation recruiter-friendly.
+This folder contains supporting documentation and media for the vehicle-side STM32 firmware and hardware integration.
 
-## Recommended Media
+The vehicle subsystem receives wireless commands from the controller, drives the DC motor and steering servo, measures distance using the HC-SR04 ultrasonic sensor, controls headlights, and supports integration with the metal detection subsystem.
 
-Add these files under `docs/media/`:
+---
 
-- `demo-drive.gif` - short loop of steering + throttle response
-- `demo-distance.mp4` - distance telemetry update demo
-- `wiring-top.jpg` - top-view wiring photo
-- `wiring-labels.jpg` - labeled wiring photo
-- `block-diagram.png` - high-level system block diagram
+## Final Vehicle
 
-## Suggested Captions
+### Side View
 
-- What hardware is shown
-- What the UART packet stream is doing in this scene
-- What safety/failsafe behavior is demonstrated
+![Vehicle Side View](media/car-side.jpeg)
 
-## Embed Example for README
+Final vehicle assembly showing the STM32-based control system, onboard power, custom PCB hardware, Bluetooth communication, ultrasonic sensing, and mechanical chassis integration.
 
-```md
-## Demo
+### Front View
 
-![Drive Demo](docs/media/demo-drive.gif)
+![Vehicle Front View](media/car-front.jpeg)
 
-[Distance Telemetry Video](docs/media/demo-distance.mp4)
-```
+Front view showing the HC-SR04 ultrasonic sensor placement, front steering geometry, and vehicle structure.
 
-## Quality Bar Before Posting
+### Top View
 
-- Media filenames are clean and descriptive
-- Wires are labeled in at least one image
-- One architecture image exists (`block-diagram.png`)
-- README demo links resolve and render on GitHub
+![Vehicle Top View](media/car-top.jpeg)
+
+Top view showing the internal layout of the vehicle, including PCB placement, wiring, battery positioning, and drivetrain integration.
+
+---
+
+## Vehicle PCB
+
+![Vehicle PCB](media/car-pcb.png)
+
+The vehicle PCB integrates the motor driver, voltage regulation, STM32 header connections, Bluetooth interface, and vehicle-side wiring. It acts as the main electrical integration board for propulsion, sensing, communication, and power distribution.
+
+---
+
+## Metal Detector PCB
+
+![Metal Detector PCB](media/metal-detector-pcb.png)
+
+The metal detector subsystem uses a separate PCB to reduce congestion on the vehicle PCB and simplify integration. The circuit provides buzzer feedback when metal is detected.
+
+---
+
+## Mechanical Chassis
+
+![Vehicle Chassis](media/car-chassis.png)
+
+The vehicle chassis was designed to support the drivetrain, steering mechanism, ultrasonic sensor, battery, PCB mounting, and wiring access. The chassis and mechanical components were designed for 3D printing and subsystem integration.
+
+---
+
+## Vehicle Subsystem Responsibilities
+
+The vehicle-side STM32 firmware is responsible for:
+
+- Receiving Bluetooth commands from the controller
+- Parsing throttle, steering, and headlight commands
+- Driving the DC motor through PWM and direction control
+- Controlling the steering servo using PWM
+- Triggering and reading the HC-SR04 ultrasonic sensor
+- Sending distance telemetry back to the controller
+- Supporting safe operation during communication loss or invalid command states
+
+---
+
+## Media Checklist
+
+Current media in this folder:
+
+```text
+docs/media/
+├── car-side.jpeg
+├── car-front.jpeg
+├── car-top.jpeg
+├── car-pcb.png
+├── metal-detector-pcb.png
+└── car-chassis.png

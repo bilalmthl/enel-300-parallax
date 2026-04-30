@@ -2,7 +2,15 @@
 **ENEL 300 – Winter 2026 Course Project**  
 
 Built for **ENEL 300: Electrical and Computer Engineering Design** at the **University of Calgary**.  
-Placed **2nd out of 40 teams** in the Winter 2026 final competition.
+Placed **2nd out of 40 teams** in the Winter 2026 final competition. 🥈
+
+---
+
+## Project Summary
+
+This project integrates electrical design, embedded firmware, wireless communication, sensing, power management, and mechanical design into a self-powered RC vehicle.
+
+The system uses a **vehicle STM32** and a **controller STM32**. The controller reads joystick inputs and sends commands wirelessly through HC-05 Bluetooth. The vehicle receives those commands, controls the DC motor and steering servo, measures distance using an HC-SR04 ultrasonic sensor, detects metal using a separate detector circuit, and sends distance feedback back to the controller LCD.
 
 ---
 
@@ -18,11 +26,6 @@ Placed **2nd out of 40 teams** in the Winter 2026 final competition.
 
 ---
 
-## Project Summary
-
-This project integrates electrical design, embedded firmware, wireless communication, sensing, power management, and mechanical design into a self-powered RC vehicle.
-
-The system uses a **vehicle STM32** and a **controller STM32**. The controller reads joystick inputs and sends commands wirelessly through HC-05 Bluetooth. The vehicle receives those commands, controls the DC motor and steering servo, measures distance using an HC-SR04 ultrasonic sensor, detects metal using a separate detector circuit, and sends distance feedback back to the controller LCD.
 
 ---
 

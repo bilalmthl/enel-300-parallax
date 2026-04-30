@@ -68,6 +68,21 @@ For detailed firmware diagrams and code-level architecture, see the individual f
 - [`Controller Firmware README`](./enel-300-truncate/README.md)
 
 ---
+## Demo
+
+### Competition Drive Demo
+
+[Watch Drive Demo](enel-300-parallax/docs/media/car-drive-circuit1.mp4)
+
+The vehicle demonstrates wireless throttle and steering response during the competition circuit using STM32-based Bluetooth control.
+
+### Distance Sensing and Controller Feedback
+
+[Watch Distance Telemetry Demo](enel-300-truncate/docs/media/distance-sensing.mp4)
+
+The vehicle measures distance using the HC-SR04 ultrasonic sensor and sends telemetry back to the controller LCD over the Bluetooth UART link.
+
+---
 
 ## Hardware Overview
 

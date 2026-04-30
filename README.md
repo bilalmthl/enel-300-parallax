@@ -9,7 +9,7 @@ Placed **2nd out of 40 teams** in the Winter 2026 final competition.
 ## Final Build
 
 <p align="center">
-  <img src="enel-300-parallax/docs/media/car-side.jpg" width="650" alt="Final RC vehicle side view">
+  <img src="enel-300-parallax/docs/media/car-side.jpeg" width="650" alt="Final RC vehicle side view">
 </p>
 
 <p align="center">
@@ -95,21 +95,21 @@ Three custom PCBs were designed to organize and integrate the electrical system:
    Integrated the motor driver, voltage regulation, STM32 headers, Bluetooth connections, and vehicle-side wiring.
 
 <p align="center">
-  <img src="enel-300-parallax/docs/media/car-pcb.jpg" width="600" alt="Vehicle PCB render">
+  <img src="enel-300-parallax/docs/media/car-pcb.png" width="600" alt="Vehicle PCB render">
 </p>
 
 2. **Controller PCB**  
    Supported the joystick inputs, STM32 controller board, Bluetooth module, LCD display, and button interface.
 
 <p align="center">
-  <img src="enel-300-truncate/docs/media/controller-pcb.jpg" width="600" alt="Controller PCB render">
+  <img src="enel-300-truncate/docs/media/controller-pcb.png" width="600" alt="Controller PCB render">
 </p>
 
 3. **Metal Detector PCB**  
    Implemented the LM555-based metal detection circuit with buzzer feedback.
 
 <p align="center">
-  <img src="enel-300-parallax/docs/media/metal-detector-pcb.jpg" width="600" alt="Metal detector PCB render">
+  <img src="enel-300-parallax/docs/media/metal-detector-pcb.png" width="600" alt="Metal detector PCB render">
 </p>
 
 ---
@@ -119,19 +119,19 @@ Three custom PCBs were designed to organize and integrate the electrical system:
 ### Vehicle Front View
 
 <p align="center">
-  <img src="enel-300-parallax/docs/media/car-front.jpg" width="500" alt="Final vehicle front view">
+  <img src="enel-300-parallax/docs/media/car-front.jpeg" width="500" alt="Final vehicle front view">
 </p>
 
 ### Vehicle Top View
 
 <p align="center">
-  <img src="enel-300-parallax/docs/media/car-top.jpg" width="500" alt="Final vehicle top view">
+  <img src="enel-300-parallax/docs/media/car-top.jpeg" width="500" alt="Final vehicle top view">
 </p>
 
 ### Controller
 
 <p align="center">
-  <img src="enel-300-truncate/docs/media/controller-side.jpg" width="600" alt="Controller side view">
+  <img src="enel-300-truncate/docs/media/controller-side.jpeg" width="600" alt="Controller side view">
 </p>
 
 ---
@@ -143,7 +143,7 @@ The vehicle chassis, controller housing, rear axle supports, gears, tie rod, and
 The final drivetrain used a **2.375:1 gear ratio** after packaging constraints prevented the originally planned 4:1 ratio. Higher PWM input was used to compensate for the lower gear reduction.
 
 <p align="center">
-  <img src="enel-300-parallax/docs/media/car-chassis.jpg" width="600" alt="3D printed chassis CAD">
+  <img src="enel-300-parallax/docs/media/car-chassis.png" width="600" alt="3D printed chassis CAD">
 </p>
 
 ---

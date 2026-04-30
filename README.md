@@ -1,7 +1,6 @@
-# STM32 Radio-Controlled Car with Metal Detection & Distance Sensing  
-**ENEL 300 – Winter 2026 Course Project**  
+# STM32 Radio-Controlled Car with Metal Detection & Distance Sensing   
 
-Built for **ENEL 300: Electrical and Computer Engineering Design** at the **University of Calgary**.  
+This project was completed as part of ENEL 300 at the University of Calgary. The course required teams to design and demonstrate a self-powered RC vehicle with wireless control, sensing, custom PCB integration, 3D-printed mechanical design, and budget-constrained engineering tradeoffs. 
 Placed **2nd out of 40 teams** in the Winter 2026 final competition. 🥈
 
 ---
@@ -227,14 +226,19 @@ The system was tested through staged subsystem validation before final integrati
 
 ```text
 .
-├── enel-300-parallax/     # Vehicle-side STM32 firmware
-├── enel-300-truncate/     # Controller-side STM32 firmware
-├── media/                 # Project photos, PCB renders, CAD images, demo media
-└── README.md              # Main project overview
+├── enel-300-parallax/
+│   ├── Core/              # Vehicle-side STM32 source code
+│   └── docs/media/        # Vehicle photos, PCB renders, chassis media, drive demo
+├── enel-300-truncate/
+│   ├── Core/              # Controller-side STM32 source code
+│   └── docs/media/        # Controller photos, PCB render, distance telemetry demo
+├── .gitignore
+└── README.md
+
 ```
 
 ---
 
 ## Project Context
 
-This project was completed as part of ENEL 300 at the University of Calgary. The course required teams to design and demonstrate a self-powered RC vehicle with wireless control, sensing, custom PCB integration, 3D-printed mechanical design, and budget-constrained engineering tradeoffs.n, and system-level integration into a working competition prototype.
+This project was completed as part of ENEL 300 at the University of Calgary. The course required teams to design and demonstrate a self-powered RC vehicle with wireless control, sensing, custom PCB integration, 3D-printed mechanical design, and budget-constrained engineering tradeoffs, and system-level integration into a working competition prototype.

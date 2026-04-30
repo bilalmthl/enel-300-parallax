@@ -1,169 +1,222 @@
 # STM32 Radio-Controlled Car with Metal Detection & Distance Sensing  
 **ENEL 300 – Winter 2026 Course Project**  
-Second-year Electrical Engineering project at the University of Calgary  
+
+Built for **ENEL 300: Electrical and Computer Engineering Design** at the **University of Calgary**.  
+Placed **2nd out of 40 teams** in the Winter 2026 final competition.
 
 ---
 
-## Overview
+## Final Build
 
-This project involves the design and implementation of a wirelessly controlled embedded vehicle capable of metal detection, object distance measurement, and real-time control.
+<p align="center">
+  <img src="media/final_vehicle_side.jpg" width="650" alt="Final RC vehicle side view">
+</p>
 
-The system was developed using the STM32 NUCLEO-F446RE platform and integrates sensing, actuation, and communication subsystems into a fully functional prototype designed to meet strict engineering constraints.
-
-The project culminates in a final competition involving navigation, sensing, and performance tasks.
-
----
-
-## Project Objectives
-
-The system was designed to satisfy the following core requirements:
-
-- Wireless remote control of the vehicle  
-- Forward motion and steering capability  
-- Detection of copper plates (metal detection)  
-- Measurement of object distance (up to 80 cm)  
-- Real-time display of distance readings  
-- Audible response upon metal detection  
-- Headlight control functionality  
-- Fully self-powered operation  
+<p align="center">
+  <b>Final integrated vehicle with STM32 control, custom PCB hardware, ultrasonic sensing, Bluetooth communication, headlights, metal detection, and onboard power.</b>
+</p>
 
 ---
 
-## System Features
+## Project Summary
 
-### 🔹 Wireless Control (HC-05)
-- Real-time bidirectional Bluetooth communication  
-- Custom-built controller  
-- Command packet processing and fail-safe handling  
+This project integrates electrical design, embedded firmware, wireless communication, sensing, power management, and mechanical design into a self-powered RC vehicle.
 
-### 🔹 Motor & Steering Control
-- PWM-based DC motor control using motor driver  
-- Servo-based steering control  
-- Smooth real-time actuation  
+The system uses a **vehicle STM32** and a **controller STM32**. The controller reads joystick inputs and sends commands wirelessly through HC-05 Bluetooth. The vehicle receives those commands, controls the DC motor and steering servo, measures distance using an HC-SR04 ultrasonic sensor, detects metal using a separate detector circuit, and sends distance feedback back to the controller LCD.
 
-### 🔹 Distance Sensing (HC-SR04)
-- Measures object distance up to 80 cm  
-- Timer Input Capture for precise echo timing  
-- Approximate accuracy of ±2.5 cm  
+---
 
-### 🔹 Metal Detection System
-- Detects copper plates embedded in the track  
-- Triggers audible alert upon detection  
-- Silent when no metal is present  
+## Key Features
 
-### 🔹 Fail-Safe Mechanism
-- Stops motor and centers steering on signal loss  
-- Ensures safe operation  
+- Wireless control using paired **HC-05 Bluetooth modules**
+- Dual **STM32 NUCLEO-F446RE** architecture
+- PWM-based DC motor speed and direction control
+- PWM servo steering
+- HC-SR04 ultrasonic distance sensing
+- Real-time distance feedback to controller LCD
+- Metal detection circuit with buzzer feedback
+- Headlight control from controller button
+- Custom vehicle, controller, and metal detector PCBs
+- 3D-printed chassis, controller housing, drivetrain, and steering components
+- Battery-powered system completed under a **$120 CAD** budget
 
 ---
 
 ## System Architecture
 
-### Hardware Components
-- Microcontroller: STM32 NUCLEO-F446RE  
-- Communication: HC-05 Bluetooth Module  
+```text
+Controller STM32
+  ├── Reads joystick inputs
+  ├── Sends throttle/steering/headlight commands over Bluetooth
+  ├── Receives distance telemetry
+  └── Displays distance on LCD
 
-**Sensors:**
-- HC-SR04 Ultrasonic Sensor  
-- Custom Metal Detection Circuit  
+Bluetooth UART Link
 
-**Actuators:**
-- DC Motor (Injora 55T) (rear drive) 
-- Servo Motor (steering)  
+Vehicle STM32
+  ├── Receives wireless control commands
+  ├── Drives DC motor through motor driver
+  ├── Controls steering servo using PWM
+  ├── Measures distance using HC-SR04
+  ├── Controls headlights
+  └── Sends distance telemetry back to controller
+```
 
-**Additional:**
-- Buzzer  
-- Headlight system  
+For detailed firmware diagrams and code-level architecture, see the individual firmware READMEs:
 
----
-
-## Firmware Design
-
-### Core Modules
-
-**UART Communication**
-- UART1: Bluetooth  
-- UART2: Debugging  
-
-**PWM Control**
-- Motor speed control  
-- Servo steering control  
-
-**Ultrasonic Measurement**
-- Timer Input Capture  
-- Periodic triggering (~80 ms)  
-
-**Control Logic**
-- Parses controller inputs  
-- Maps inputs to motor and steering  
-- Implements timeout-based fail-safe  
+- [`Car Firmware README`](./enel-300-parallax/README.md)
+- [`Controller Firmware README`](./enel-300-truncate/README.md)
 
 ---
 
-## Competition Tasks
+## Hardware Overview
 
-### Circuit 1: Sensing & Detection
-- Navigate within a 2 m × 2 m boundary  
-- Detect copper plates  
-- Measure distance to objects  
-- Display readings  
-
-### Circuit 2: Mobility Challenge
-- Drive 10 m forward and return  
-- Traverse a ramp (~20° incline)  
-
----
-
-## Design Constraints
-
-- Maximum budget: $120 CAD  
-- Must include a custom PCB  
-- Must include at least one 3D-printed component  
-- Arduino platform not allowed  
-- Custom controller required  
+| Subsystem | Implementation |
+|---|---|
+| Microcontroller | STM32 NUCLEO-F446RE |
+| Wireless Communication | HC-05 Bluetooth over UART |
+| Motor Drive | DRV8251ADDAR motor driver |
+| Steering | Servo motor controlled using PWM |
+| Distance Sensing | HC-SR04 ultrasonic sensor |
+| Metal Detection | LM555-based detector circuit with buzzer |
+| Display | I2C LCD on controller |
+| Main Vehicle Power | 12 V, 5600 mAh lithium-ion battery |
+| Controller Power | Separate 9 V battery |
+| PCB Design | Altium Designer |
+| Mechanical Design | Fusion 360, 3D-printed PLA components |
 
 ---
 
-## Key Engineering Challenges
+## Custom PCB Integration
 
-- Reliable Bluetooth communication  
-- Accurate ultrasonic timing  
-- Real-time system integration  
-- Debugging embedded hardware/software interaction  
+Three custom PCBs were designed to organize and integrate the electrical system:
+
+1. **Vehicle PCB**  
+   Integrated the motor driver, voltage regulation, STM32 headers, Bluetooth connections, and vehicle-side wiring.
+
+<p align="center">
+  <img src="media/car_pcb_render.jpg" width="600" alt="Vehicle PCB render">
+</p>
+
+2. **Controller PCB**  
+   Supported the joystick inputs, STM32 controller board, Bluetooth module, LCD display, and button interface.
+
+<p align="center">
+  <img src="media/controller_pcb_render.jpg" width="600" alt="Controller PCB render">
+</p>
+
+3. **Metal Detector PCB**  
+   Implemented the LM555-based metal detection circuit with buzzer feedback.
+
+<p align="center">
+  <img src="media/metal_detector_pcb_render.jpg" width="600" alt="Metal detector PCB render">
+</p>
+
+---
+
+## Final Vehicle and Controller
+
+### Vehicle Front View
+
+<p align="center">
+  <img src="media/final_vehicle_front.jpg" width="500" alt="Final vehicle front view">
+</p>
+
+### Vehicle Top View
+
+<p align="center">
+  <img src="media/final_vehicle_top.jpg" width="500" alt="Final vehicle top view">
+</p>
+
+### Controller
+
+<p align="center">
+  <img src="media/controller_side.jpg" width="600" alt="Controller side view">
+</p>
+
+---
+
+## Mechanical Design
+
+The vehicle chassis, controller housing, rear axle supports, gears, tie rod, and steering links were designed in Fusion 360 and 3D printed in PLA.
+
+The final drivetrain used a **2.375:1 gear ratio** after packaging constraints prevented the originally planned 4:1 ratio. Higher PWM input was used to compensate for the lower gear reduction.
+
+<p align="center">
+  <img src="media/chassis_rear_view.jpg" width="600" alt="3D printed chassis CAD">
+</p>
+
+---
+
+## Testing and Validation
+
+The system was tested through staged subsystem validation before final integration:
+
+- Joystick input testing
+- HC-05 Bluetooth pairing and UART communication
+- Motor driver and PWM validation
+- Servo steering validation
+- HC-SR04 distance sensing
+- LCD telemetry display
+- Metal detector buzzer activation
+- Battery-powered full-system testing
+- Final competition trials
 
 ---
 
 ## Results
 
-- Stable wireless control  
-- Accurate distance sensing  
-- Reliable metal detection  
-- Fully integrated working system  
+- Placed **2nd out of 40 teams** in the ENEL 300 Winter 2026 final competition
+- Completed final design under the **$120 CAD** budget with a final BOM of approximately **$118.01 CAD**
+- Achieved wireless control between two STM32 boards using Bluetooth UART
+- Integrated motor control, steering, distance sensing, LCD feedback, headlights, metal detection, custom PCB hardware, and 3D-printed mechanical components into one working system
+- Demonstrated reliable vehicle operation during final testing and competition runs
 
 ---
 
-## How to Run
+## Skills Demonstrated
 
-1. Open project in STM32CubeIDE  
-2. Build and flash firmware  
-3. Pair HC-05 modules  
-4. Power the system  
+- Embedded C programming
+- STM32 HAL development
+- UART communication
+- PWM motor and servo control
+- Analog joystick input processing
+- Ultrasonic distance sensing
+- I2C LCD interfacing
+- PCB design in Altium Designer
+- Motor driver integration
+- Power distribution and voltage regulation
+- Battery-powered embedded systems
+- Hardware/software debugging
+- 3D-printed mechanical integration
+- System-level testing
 
 ---
 
-## Future Improvements
+## Team
 
-- Closed-loop motor control with encoders  
-- Improved communication protocol (CRC)  
-- Autonomous navigation  
-- Sensor fusion  
+| Team Member | Main Contributions |
+|---|---|
+| Saad Subhani | STM32 firmware, Controls and electrical integration, embedded debugging |
+| Bilal Melethil | PCB design, Altium layout, Controls and electrical integration |
+| Ammaar Khaleel | 3D modelling, chassis design, controller housing, mechanical integration |
+| Arsalan Khan | Gear design, drivetrain support, mechanical subsystem development |
+| Omar Taktak | System integration, testing, project support |
 
 ---
 
-## Contributors
-  
-- Bilal Melethil  
-- Ammaar Khaleel  
-- Saad Subhani
-- Arsalan Khan
-- Omar Taktak
+## Repository Structure
+
+```text
+.
+├── enel-300-parallax/     # Vehicle-side STM32 firmware
+├── enel-300-truncate/     # Controller-side STM32 firmware
+├── media/                 # Project photos, PCB renders, CAD images, demo media
+└── README.md              # Main project overview
+```
+
+---
+
+## Project Context
+
+This project was completed as part of ENEL 300 at the University of Calgary. The course required teams to design and demonstrate a self-powered RC vehicle with wireless control, sensing, custom PCB integration, 3D-printed mechanical design, and budget-constrained engineering tradeoffs.n, and system-level integration into a working competition prototype.
